@@ -16,8 +16,6 @@ import {
   DollarSign,
   Activity,
   TrendingUp,
-  FileText,
-  BarChart3,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -94,8 +92,12 @@ export function Dashboard() {
   }
 
   const handleTaskClick = (taskType: string) => {
-    setSelectedTaskType(taskType)
-    setShowTaskDetails(true)
+    if (taskType === "pending" || taskType === "inProgress") {
+      router.push(`/records?taskType=${taskType}`)
+    } else {
+      setSelectedTaskType(taskType)
+      setShowTaskDetails(true)
+    }
   }
 
   const handleWeeklyStatsClick = () => {
@@ -108,8 +110,14 @@ export function Dashboard() {
   }
 
   const handleAppointmentClick = (appointment: any) => {
-    setSelectedAppointment(appointment)
-    setShowAppointmentDetails(true)
+    if (appointment.status === "待服务" || appointment.status === "进行中") {
+      router.push(
+        `/records?patientId=${appointment.id}&patientName=${encodeURIComponent(appointment.patientName)}&service=${encodeURIComponent(appointment.service)}&time=${encodeURIComponent(appointment.time)}&address=${encodeURIComponent(appointment.address)}`,
+      )
+    } else {
+      setSelectedAppointment(appointment)
+      setShowAppointmentDetails(true)
+    }
   }
 
   const handleTakePhoto = () => {
@@ -132,7 +140,7 @@ export function Dashboard() {
 
   const handleStartService = (appointment: any) => {
     setShowAppointmentDetails(false)
-    router.push(`/records?patient=${appointment.patientName}`)
+    router.push(`/patients?patient=${appointment.patientName}`)
   }
 
   const handlePhoneCall = (phoneNumber: string) => {
@@ -242,9 +250,9 @@ export function Dashboard() {
                   <span className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">15分钟前</span>
                 </div>
                 <p className="text-sm text-red-600 leading-relaxed">李奶奶血压异常 (180/110 mmHg)，需要立即处理</p>
-                <Button 
-                  size="sm" 
-                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 rounded-2xl px-4 py-2 h-8 shadow-lg shadow-red-200 transform hover:scale-105 transition-all duration-200" 
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 rounded-2xl px-4 py-2 h-8 shadow-lg shadow-red-200 transform hover:scale-105 transition-all duration-200"
                   onClick={handleEmergencyAction}
                 >
                   立即处理
@@ -487,10 +495,10 @@ export function Dashboard() {
               </div>
               今日日程
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-2xl px-3 py-1.5" 
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-2xl px-3 py-1.5"
               onClick={handleViewAllSchedule}
             >
               查看全部
@@ -511,32 +519,38 @@ export function Dashboard() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-2xl flex items-center justify-center ${
-                      appointment.status === "已完成"
-                        ? "bg-gradient-to-br from-green-400 to-green-500"
-                        : appointment.status === "进行中"
-                          ? "bg-gradient-to-br from-blue-400 to-blue-500"
-                          : "bg-gradient-to-br from-orange-400 to-orange-500"
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-2xl flex items-center justify-center ${
+                        appointment.status === "已完成"
+                          ? "bg-gradient-to-br from-green-400 to-green-500"
+                          : appointment.status === "进行中"
+                            ? "bg-gradient-to-br from-blue-400 to-blue-500"
+                            : "bg-gradient-to-br from-orange-400 to-orange-500"
+                      }`}
+                    >
                       <Clock className="h-4 w-4 text-white" />
                     </div>
-                    <span className={`text-sm font-semibold ${
-                      appointment.status === "已完成"
-                        ? "text-green-800"
-                        : appointment.status === "进行中"
-                          ? "text-blue-800"
-                          : "text-orange-800"
-                    }`}>
+                    <span
+                      className={`text-sm font-semibold ${
+                        appointment.status === "已完成"
+                          ? "text-green-800"
+                          : appointment.status === "进行中"
+                            ? "text-blue-800"
+                            : "text-orange-800"
+                      }`}
+                    >
                       {appointment.time}
                     </span>
                   </div>
-                  <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                    appointment.status === "已完成"
-                      ? "bg-green-200/50 text-green-700 border border-green-300/50"
-                      : appointment.status === "进行中"
-                        ? "bg-blue-200/50 text-blue-700 border border-blue-300/50"
-                        : "bg-orange-200/50 text-orange-700 border border-orange-300/50"
-                  }`}>
+                  <div
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      appointment.status === "已完成"
+                        ? "bg-green-200/50 text-green-700 border border-green-300/50"
+                        : appointment.status === "进行中"
+                          ? "bg-blue-200/50 text-blue-700 border border-blue-300/50"
+                          : "bg-orange-200/50 text-orange-700 border border-orange-300/50"
+                    }`}
+                  >
                     {appointment.status}
                   </div>
                 </div>
@@ -572,106 +586,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {showEmergencyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4 text-destructive">紧急处理</h3>
-            <p className="text-sm text-muted-foreground mb-4">李奶奶血压异常，建议立即采取以下措施：</p>
-            <div className="space-y-2 mb-4">
-              <p className="text-sm">• 让患者平躺休息</p>
-              <p className="text-sm">• 立即联系主治医生</p>
-              <p className="text-sm">• 准备紧急药物</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="destructive" className="flex-1" onClick={() => (window.location.href = "tel:120")}>
-                拨打120
-              </Button>
-              <Button variant="outline" onClick={() => setShowEmergencyModal(false)}>
-                关闭
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showNewServiceModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4">开始新服务</h3>
-            <div className="space-y-3">
-              <Button className="w-full justify-start" onClick={() => router.push("/patients")}>
-                选择患者
-              </Button>
-              <Button className="w-full justify-start" onClick={() => router.push("/records")}>
-                记录健康数据
-              </Button>
-              <Button className="w-full justify-start" onClick={() => router.push("/schedule")}>
-                查看今日安排
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full mt-4 bg-transparent"
-              onClick={() => setShowNewServiceModal(false)}
-            >
-              取消
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4">处理付款</h3>
-            <p className="text-sm text-muted-foreground mb-4">选择付款方式：</p>
-            <div className="space-y-2">
-              <Button className="w-full justify-start bg-green-50 text-green-700 border-green-200" variant="outline">
-                微信支付
-              </Button>
-              <Button className="w-full justify-start bg-blue-50 text-blue-700 border-blue-200" variant="outline">
-                支付宝
-              </Button>
-              <Button className="w-full justify-start bg-transparent" variant="outline">
-                现金支付
-              </Button>
-            </div>
-            <Button variant="outline" className="w-full mt-4 bg-transparent" onClick={() => setShowPaymentModal(false)}>
-              取消
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {showPhotoUpload && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-4">上传照片</h3>
-            <div className="space-y-3">
-              <Button className="w-full justify-start bg-transparent" variant="outline" onClick={handleTakePhoto}>
-                <Camera className="h-4 w-4 mr-2" />
-                拍摄新照片
-              </Button>
-              <Button
-                className="w-full justify-start bg-transparent"
-                variant="outline"
-                onClick={handleSelectFromGallery}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                从相册选择
-              </Button>
-              <Button className="w-full justify-start bg-transparent" variant="outline" onClick={handleScanDocument}>
-                <BarChart3 className="h-4 w-4 mr-2" />
-                扫描文档
-              </Button>
-            </div>
-            <Button variant="outline" className="w-full mt-4 bg-transparent" onClick={() => setShowPhotoUpload(false)}>
-              取消
-            </Button>
-          </div>
-        </div>
-      )}
-
+      {/* 任务详情模态框 */}
       {showTaskDetails && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -680,36 +595,7 @@ export function Dashboard() {
               {selectedTaskType === "inProgress" && "进行中任务"}
               {selectedTaskType === "completed" && "已完成任务"}
             </h3>
-            <div className="space-y-3">
-              {todayAppointments
-                .filter((apt) => {
-                  if (selectedTaskType === "pending") return apt.status === "待服务"
-                  if (selectedTaskType === "inProgress") return apt.status === "进行中"
-                  if (selectedTaskType === "completed") return apt.status === "已完成"
-                  return false
-                })
-                .map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    className={`p-3 border rounded-lg ${
-                      appointment.status === "已完成"
-                        ? "bg-green-50"
-                        : appointment.status === "进行中"
-                          ? "bg-blue-50"
-                          : ""
-                    }`}
-                  >
-                    <p className="font-medium">
-                      {appointment.patientName}家 - {appointment.service}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {appointment.time}
-                      {appointment.status === "进行中" && " (进行中)"}
-                      {appointment.status === "已完成" && " (已完成)"}
-                    </p>
-                  </div>
-                ))}
-            </div>
+            <div className="space-y-3">{/* Task details will be fetched based on taskType from records page */}</div>
             <Button variant="outline" className="w-full mt-4 bg-transparent" onClick={() => setShowTaskDetails(false)}>
               关闭
             </Button>
@@ -717,6 +603,7 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* 本周统计模态框 */}
       {showWeeklyStats && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -748,6 +635,7 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* 财务详情模态框 */}
       {showFinanceDetails && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -804,6 +692,7 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* 预约详情模态框 */}
       {showAppointmentDetails && selectedAppointment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
@@ -832,6 +721,7 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* 联系医生模态框 */}
       {showContactDoctor && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-sm">
