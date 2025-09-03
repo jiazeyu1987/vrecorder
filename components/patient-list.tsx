@@ -2134,14 +2134,15 @@ export function PatientList() {
       {showNewFamilyModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-3">
           <div className={cn(
-            // 微信小程序模态框风格
+            // 微信小程序模态框风格 - 优化整体结构
             "bg-white rounded-3xl shadow-xl border border-gray-100",
-            "w-full max-h-[90vh] overflow-hidden",
+            "w-full flex flex-col",
+            // 优化高度设置，确保在移动端不会超出屏幕
             deviceType === "mobile" 
-              ? "max-w-[95vw]" 
+              ? "max-w-[95vw] max-h-[92vh]" 
               : deviceType === "tablet" 
-              ? "max-w-2xl" 
-              : "max-w-3xl"
+              ? "max-w-2xl max-h-[88vh]" 
+              : "max-w-3xl max-h-[85vh]"
           )}>
             {/* 微信小程序模态框标题栏 */}
             <div className={cn(
@@ -2183,11 +2184,12 @@ export function PatientList() {
             {/* 滚动内容区域 */}
             <div className={cn(
               "overflow-y-auto",
-              deviceType === "mobile" ? "max-h-[75vh]" : "max-h-[80vh]"
+              // 减少最大高度，为底部按钮预留空间
+              deviceType === "mobile" ? "max-h-[60vh]" : deviceType === "tablet" ? "max-h-[65vh]" : "max-h-[70vh]"
             )}>
               <div className={cn(
                 "space-y-6",
-                deviceType === "mobile" ? "p-4" : deviceType === "tablet" ? "p-5" : "p-6"
+                deviceType === "mobile" ? "p-4 pb-2" : deviceType === "tablet" ? "p-5 pb-3" : "p-6 pb-4"
               )}>
                 {/* 微信小程序基本信息卡片 */}
                 <div className={cn(
@@ -2455,11 +2457,12 @@ export function PatientList() {
               </div>
             </div>
 
-            {/* 微信小程序底部操作栏 */}
+            {/* 微信小程序底部操作栏 - 固定在底部 */}
             <div className={cn(
-              "bg-white border-t border-gray-100",
-              "flex gap-3",
-              deviceType === "mobile" ? "p-4" : deviceType === "tablet" ? "p-5" : "p-6"
+              "bg-white border-t border-gray-100 sticky bottom-0",
+              "flex gap-3 z-10 shadow-lg",
+              // 确保在所有设备上都有足够的内边距
+              deviceType === "mobile" ? "p-4 pb-6" : deviceType === "tablet" ? "p-5 pb-6" : "p-6"
             )}>
               <Button 
                 variant="outline" 
