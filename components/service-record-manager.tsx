@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useDeviceType } from "@/hooks/use-wechat-responsive"
+import { cn } from "@/lib/utils"
 import {
   FileText,
   Clock,
@@ -68,6 +70,7 @@ interface ServiceRecordManagerProps {
 
 export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProps) {
   const router = useRouter()
+  const deviceType = useDeviceType()
   const [appointment, setAppointment] = useState<Appointment | null>(null)
   const [historyRecords, setHistoryRecords] = useState<HealthRecord[]>([])
   const [currentRecord, setCurrentRecord] = useState<Partial<HealthRecord>>({
@@ -324,62 +327,162 @@ export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProp
   }
 
   return (
-    <div className="space-y-4 max-w-md mx-auto px-4 py-4">
-      {/* 顶部导航 */}
-      <div className="flex items-center gap-3 mb-6">
+    <div className={cn(
+      "space-y-6 min-h-screen",
+      deviceType === "mobile" ? "px-4 py-4" : deviceType === "tablet" ? "px-6 py-6 max-w-2xl mx-auto" : "px-8 py-8 max-w-3xl mx-auto"
+    )}>
+      {/* 微信风格顶部导航 */}
+      <div className="flex items-center gap-4 mb-8">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => router.back()} 
-          className="p-2 rounded-full hover:bg-gray-100"
+          className={cn(
+            "rounded-full transition-all duration-300",
+            "bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl",
+            "border border-gray-100/50 hover:bg-white",
+            deviceType === "mobile" ? "p-3" : "p-2.5"
+          )}
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className={cn(
+            "text-gray-700",
+            deviceType === "mobile" ? "h-6 w-6" : "h-5 w-5"
+          )} />
         </Button>
-        <div>
-          <h1 className="text-xl font-semibold text-gray-800">服务记录</h1>
-          <p className="text-sm text-gray-600">{appointment.patientName}</p>
+        <div className="flex-1">
+          <h1 className={cn(
+            "font-semibold text-gray-800",
+            deviceType === "mobile" ? "text-2xl" : deviceType === "tablet" ? "text-xl" : "text-lg"
+          )}>服务记录</h1>
+          <p className={cn(
+            "text-gray-600 mt-1",
+            deviceType === "mobile" ? "text-base" : "text-sm"
+          )}>{appointment.patientName}</p>
         </div>
       </div>
 
-      {/* 当前预约信息 */}
-      <Card className="border-0 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg rounded-3xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-3 text-blue-800">
-            <Calendar className="h-5 w-5" />
+      {/* 微信风格当前预约信息卡片 */}
+      <Card className={cn(
+        "border-0 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl",
+        "bg-gradient-to-br from-blue-50/80 via-white to-blue-50/50 backdrop-blur-sm",
+        deviceType === "mobile" ? "rounded-3xl" : "rounded-2xl"
+      )}>
+        <CardHeader className={cn(
+          "pb-4 relative",
+          deviceType === "mobile" ? "p-6" : "p-5"
+        )}>
+          {/* 微信风格装饰性背景 */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-200/30 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-blue-300/20 to-transparent rounded-full blur-2xl" />
+          
+          <CardTitle className={cn(
+            "flex items-center gap-3 text-blue-800 relative z-10",
+            deviceType === "mobile" ? "text-xl" : "text-lg"
+          )}>
+            <div className={cn(
+              "rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg",
+              "flex items-center justify-center transition-transform duration-300 hover:scale-110",
+              deviceType === "mobile" ? "w-10 h-10" : "w-8 h-8"
+            )}>
+              <Calendar className={deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"} />
+            </div>
             当前日程
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">{appointment.time}</span>
+        <CardContent className={cn(
+          "space-y-4 relative z-10",
+          deviceType === "mobile" ? "px-6 pb-6" : "px-5 pb-5"
+        )}>
+          {/* 微信风格信息项 */}
+          <div className={cn(
+            "rounded-2xl bg-white/60 backdrop-blur-sm border border-blue-100/50 transition-all duration-300 hover:bg-white/80",
+            deviceType === "mobile" ? "p-4" : "p-3"
+          )}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className={cn(
+                  "font-medium text-blue-800",
+                  deviceType === "mobile" ? "text-base" : "text-sm"
+                )}>{appointment.time}</span>
+              </div>
+              <Badge className={cn(
+                "px-3 py-1.5 rounded-full border-0 font-medium shadow-sm",
+                appointment.status === "待服务" 
+                  ? "bg-gradient-to-r from-orange-200 to-orange-300 text-orange-800" 
+                  : "bg-gradient-to-r from-blue-200 to-blue-300 text-blue-800",
+                deviceType === "mobile" ? "text-sm" : "text-xs"
+              )}>
+                {appointment.status}
+              </Badge>
             </div>
-            <Badge className={`${
-              appointment.status === "待服务" ? "bg-orange-200 text-orange-700" : "bg-blue-200 text-blue-700"
-            }`}>
-              {appointment.status}
-            </Badge>
           </div>
-          <div className="flex items-center gap-3">
-            <User className="h-4 w-4 text-blue-600" />
-            <span className="text-sm text-blue-700">{appointment.service}</span>
+          
+          <div className={cn(
+            "rounded-2xl bg-white/60 backdrop-blur-sm border border-blue-100/50 transition-all duration-300 hover:bg-white/80",
+            deviceType === "mobile" ? "p-4" : "p-3"
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <User className="h-4 w-4 text-blue-600" />
+              </div>
+              <span className={cn(
+                "text-blue-700",
+                deviceType === "mobile" ? "text-base" : "text-sm"
+              )}>{appointment.service}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <MapPin className="h-4 w-4 text-blue-600" />
-            <span className="text-sm text-blue-700">{appointment.address}</span>
+          
+          <div className={cn(
+            "rounded-2xl bg-white/60 backdrop-blur-sm border border-blue-100/50 transition-all duration-300 hover:bg-white/80",
+            deviceType === "mobile" ? "p-4" : "p-3"
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-blue-600" />
+              </div>
+              <span className={cn(
+                "text-blue-700 flex-1",
+                deviceType === "mobile" ? "text-base" : "text-sm"
+              )}>{appointment.address}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 开始记录按钮 */}
-      <Card className="border-0 bg-white shadow-lg rounded-3xl">
-        <CardContent className="p-6 text-center">
+      {/* 微信风格开始记录按钮 */}
+      <Card className={cn(
+        "border-0 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl group",
+        "bg-gradient-to-br from-white to-green-50/30 backdrop-blur-sm",
+        deviceType === "mobile" ? "rounded-3xl" : "rounded-2xl"
+      )}>
+        <CardContent className={cn(
+          "text-center relative",
+          deviceType === "mobile" ? "p-8" : "p-6"
+        )}>
+          {/* 微信风格装饰性背景 */}
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-200/20 to-transparent rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-green-300/15 to-transparent rounded-full blur-xl" />
+          
           <Button
             onClick={() => setShowNewRecordForm(true)}
-            className="w-full h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-lg font-semibold rounded-3xl shadow-lg"
+            className={cn(
+              "w-full relative z-10 bg-gradient-to-r from-green-500 to-green-600",
+              "hover:from-green-600 hover:to-green-700 active:from-green-700 active:to-green-800",
+              "text-white font-semibold shadow-lg hover:shadow-xl",
+              "border-0 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]",
+              "group-hover:shadow-green-500/25",
+              deviceType === "mobile" ? "h-16 text-lg rounded-3xl" : "h-14 text-base rounded-2xl"
+            )}
           >
-            <FileText className="h-6 w-6 mr-3" />
+            <div className={cn(
+              "rounded-full bg-white/20 backdrop-blur-sm mr-3 flex items-center justify-center",
+              deviceType === "mobile" ? "w-8 h-8" : "w-7 h-7"
+            )}>
+              <FileText className={deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"} />
+            </div>
             开始记录
           </Button>
         </CardContent>

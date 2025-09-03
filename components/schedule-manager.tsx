@@ -217,149 +217,184 @@ export function ScheduleManager() {
 
   if (selectedAppointment) {
     return (
-      <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
-        <div className="flex items-center gap-3 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setSelectedAppointment(null)} 
-            className="p-2 rounded-full hover:bg-gray-100"
-          >
-            ←
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-800">服务详情</h1>
-            <p className="text-sm text-gray-600">{selectedAppointment.patientName}</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* 微信小程序风格的导航栏 */}
+        <div className="sticky top-0 z-50 bg-white border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 py-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedAppointment(null)} 
+              className="p-2 rounded-lg hover:bg-gray-100 flex items-center gap-2"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="text-sm">返回</span>
+            </Button>
+            <h1 className="text-lg font-medium text-gray-900">服务详情</h1>
+            <div className="w-16"></div> {/* 占位符保持居中 */}
           </div>
         </div>
 
-        <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Clock className="h-4 w-4 text-primary" />
+        <div className={`${isMobile ? 'px-4 pb-6' : 'px-6 pb-8 max-w-4xl mx-auto'}`}>
+          {/* 患者头像和基本信息卡片 */}
+          <div className="bg-white rounded-xl shadow-sm mx-4 mt-4 mb-3 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-8 text-white relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+              <div className="relative">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30">
+                    <User className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">{selectedAppointment.patientName}</h2>
+                    <p className="text-blue-100 text-sm mt-1">{selectedAppointment.patientAge}岁 · {selectedAppointment.condition}</p>
+                  </div>
+                </div>
               </div>
-              服务信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">服务时间</span>
-              <span className="font-medium">
-                {selectedAppointment.time} ({selectedAppointment.duration})
-              </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">服务类型</span>
-              <span className="font-medium">{selectedAppointment.serviceType}</span>
+            
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">预约状态</span>
+                <Badge variant="outline" className={getStatusColor(selectedAppointment.status)}>
+                  {getStatusText(selectedAppointment.status)}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">服务状态</span>
-              <Badge variant="outline" className={getStatusColor(selectedAppointment.status)}>
-                {getStatusText(selectedAppointment.status)}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
-              患者信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">姓名</span>
-              <span className="font-medium">{selectedAppointment.patientName}</span>
+          {/* 服务信息卡片 */}
+          <div className="bg-white rounded-xl shadow-sm mx-4 mb-3 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">服务信息</h3>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">年龄</span>
-              <span className="font-medium">{selectedAppointment.patientAge}岁</span>
+            <div className="px-6 py-4 space-y-4">
+              <div className="flex items-start justify-between">
+                <span className="text-gray-600 text-sm">服务时间</span>
+                <span className="font-medium text-right">
+                  {selectedAppointment.time}<br/>
+                  <span className="text-xs text-gray-500">预计 {selectedAppointment.duration}</span>
+                </span>
+              </div>
+              <div className="w-full h-px bg-gray-100"></div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">服务类型</span>
+                <span className="font-medium">{selectedAppointment.serviceType}</span>
+              </div>
+              <div className="w-full h-px bg-gray-100"></div>
+              <div className="flex items-start justify-between">
+                <span className="text-gray-600 text-sm">服务地址</span>
+                <div className="text-right max-w-48">
+                  <span className="font-medium text-sm leading-relaxed">{selectedAppointment.address}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">病情</span>
-              <span className="font-medium">{selectedAppointment.condition}</span>
-            </div>
-            <div className="flex items-start justify-between">
-              <span className="text-sm text-muted-foreground">地址</span>
-              <span className="font-medium text-right">{selectedAppointment.address}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">联系电话</span>
-              <span className="font-medium">{selectedAppointment.phone}</span>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" />
-              付款信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">服务费用</span>
-              <span className="font-medium text-lg">¥{selectedAppointment.paymentAmount}</span>
+          {/* 联系信息卡片 */}
+          <div className="bg-white rounded-xl shadow-sm mx-4 mb-3 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                  <Phone className="h-4 w-4 text-green-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">联系方式</h3>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">付款状态</span>
-              <Badge variant="outline" className={getPaymentStatusColor(selectedAppointment.paymentStatus)}>
-                {getPaymentStatusText(selectedAppointment.paymentStatus)}
-              </Badge>
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">联系电话</span>
+                <a href={`tel:${selectedAppointment.phone}`} className="font-medium text-blue-600 hover:text-blue-700">
+                  {selectedAppointment.phone}
+                </a>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {selectedAppointment.notes && (
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">备注信息</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{selectedAppointment.notes}</p>
-            </CardContent>
-          </Card>
-        )}
+          {/* 费用信息卡片 */}
+          <div className="bg-white rounded-xl shadow-sm mx-4 mb-3 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-orange-600" />
+                </div>
+                <h3 className="font-medium text-gray-900">费用信息</h3>
+              </div>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">服务费用</span>
+                <span className="font-semibold text-xl text-gray-900">¥{selectedAppointment.paymentAmount}</span>
+              </div>
+              <div className="w-full h-px bg-gray-100"></div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">付款状态</span>
+                <Badge variant="outline" className={getPaymentStatusColor(selectedAppointment.paymentStatus)}>
+                  {getPaymentStatusText(selectedAppointment.paymentStatus)}
+                </Badge>
+              </div>
+            </div>
+          </div>
 
-        <div className="space-y-3">
+          {/* 备注信息卡片 */}
+          {selectedAppointment.notes && (
+            <div className="bg-white rounded-xl shadow-sm mx-4 mb-6 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <AlertCircle className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <h3 className="font-medium text-gray-900">备注信息</h3>
+                </div>
+              </div>
+              <div className="px-6 py-4">
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedAppointment.notes}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 底部操作栏 */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 space-y-3">
           {selectedAppointment.status === "scheduled" && (
-            <Button className="w-full" size="lg">
-              <Play className="h-4 w-4 mr-2" />
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-medium" size="lg">
+              <Play className="h-5 w-5 mr-2" />
               开始服务
             </Button>
           )}
 
           {selectedAppointment.status === "in-progress" && (
-            <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" size="lg">
-                <CheckCircle className="h-4 w-4 mr-2" />
+            <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              <Button variant="outline" className="rounded-xl py-3 border-green-200 text-green-700 hover:bg-green-50" size="lg">
+                <CheckCircle className="h-5 w-5 mr-2" />
                 完成服务
               </Button>
-              <Button variant="outline" size="lg">
-                <AlertCircle className="h-4 w-4 mr-2" />
+              <Button variant="outline" className="rounded-xl py-3 border-orange-200 text-orange-700 hover:bg-orange-50" size="lg">
+                <AlertCircle className="h-5 w-5 mr-2" />
                 标记异常
               </Button>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" size="lg">
-              <Phone className="h-4 w-4 mr-2" />
+          <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <Button variant="outline" className="rounded-xl py-3 border-blue-200 text-blue-700 hover:bg-blue-50" size="lg">
+              <Phone className="h-5 w-5 mr-2" />
               联系患者
             </Button>
-            <Button variant="outline" size="lg">
-              <Edit className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="rounded-xl py-3 border-gray-200 text-gray-700 hover:bg-gray-50" size="lg">
+              <Edit className="h-5 w-5 mr-2" />
               调整时间
             </Button>
           </div>
 
           {selectedAppointment.paymentStatus !== "paid" && (
-            <Button variant="outline" className="w-full bg-transparent" size="lg">
-              <CreditCard className="h-4 w-4 mr-2" />
+            <Button variant="outline" className="w-full rounded-xl py-3 border-orange-200 text-orange-700 hover:bg-orange-50" size="lg">
+              <CreditCard className="h-5 w-5 mr-2" />
               处理付款
             </Button>
           )}
