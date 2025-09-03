@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { BottomNavigation } from "@/components/bottom-navigation"
+import { WechatRecordHeader } from "@/components/wechat-record-header"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import {
   FileText,
   Calendar,
@@ -299,6 +301,8 @@ export default function RecordsPage() {
   const [stream, setStream] = useState<MediaStream | null>(null)
 
   const isMobile = useIsMobile()
+  const deviceType = useDeviceType()
+  const [currentTab, setCurrentTab] = useState("all")
 
   const saveRecordsToStorage = (records: HealthRecord[]) => {
     try {
@@ -794,25 +798,59 @@ export default function RecordsPage() {
     }
   }
 
-  // Combine local records with historical records
-  const allRecords = [...localRecords, ...mockHistoricalRecords].sort(
-    (a, b) => new Date(b.date + " " + b.time).getTime() - new Date(a.date + " " + a.time).getTime(),
-  )
+  // Combine local records with mock historical records
+  const allRecords = [...localRecords, ...mockHistoricalRecords]
 
-  const localRecordStats = {
-    total: localRecords.length,
-    pending: localRecords.filter((r) => r.uploadStatus === "pending" || r.uploadStatus === "failed").length,
-    uploaded: localRecords.filter((r) => r.uploadStatus === "uploaded").length,
+  // Filter records based on current tab
+  const getFilteredRecords = () => {
+    switch (currentTab) {
+      case "pending":
+        return allRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed")
+      case "uploaded":
+        return allRecords.filter(r => r.uploadStatus === "uploaded")
+      case "drafts":
+        return allRecords.filter(r => r.status === "draft")
+      default:
+        return allRecords
+    }
+  }
+
+  const filteredRecords = getFilteredRecords()
+
+  // Calculate stats for header
+  const recordStats = {
+    total: allRecords.length,
+    pending: allRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed").length,
+    uploaded: allRecords.filter(r => r.uploadStatus === "uploaded").length,
+    drafts: allRecords.filter(r => r.status === "draft").length,
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50/30 to-indigo-50/30 ${isMobile ? "pb-24" : "pb-20"}`}>
-      <div className={`space-y-6 ${isMobile ? "px-4 py-6" : "px-6 py-8 max-w-4xl mx-auto"}`}>
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800">患者记录</h1>
-          <p className="text-sm text-gray-600 mt-1">记录和管理患者健康信息</p>
-        </div>
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50/30 to-indigo-50/30 ${deviceType === "mobile" ? "pb-24" : deviceType === "tablet" ? "pb-22" : "pb-20"}`}>
+      {/* 微信风格的记录页头部 */}
+      <WechatRecordHeader
+        title="患者记录"
+        subtitle="记录和管理患者健康信息"
+        stats={recordStats}
+        activeTab={currentTab}
+        onTabChange={setCurrentTab}
+        onAdd={() => {
+          // 开始新的记录
+          if (!isRecording) {
+            startRecording()
+          }
+        }}
+        onSearch={() => {
+          // TODO: 实现搜索功能
+          console.log("Search records")
+        }}
+        onFilter={() => {
+          // TODO: 实现筛选功能
+          console.log("Filter records")
+        }}
+      />
+
+      <div className={`space-y-6 ${deviceType === "mobile" ? "px-4 py-6" : deviceType === "tablet" ? "px-5 py-6" : "px-6 py-8 max-w-4xl mx-auto"}`}>
 
         {/* Current Appointment Info */}
         <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
@@ -1181,144 +1219,157 @@ export default function RecordsPage() {
             <CardTitle className="text-lg flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-primary" />
-                历史记录
+                {currentTab === "all" ? "全部记录" : 
+                 currentTab === "pending" ? "待上传记录" :
+                 currentTab === "uploaded" ? "已上传记录" : "草稿记录"}
               </div>
               <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                {allRecords.length} 条记录
+                {filteredRecords.length} 条记录
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {allRecords.map((record) => (
-              <Card key={record.id} className="border border-gray-100 hover:border-gray-200 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <div>
-                        <span className="font-medium">{record.serviceType}</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <span className="text-sm text-gray-600">
-                            {record.date} {record.time}
-                          </span>
+            {filteredRecords.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-gray-500">
+                  {currentTab === "all" ? "暂无记录" :
+                   currentTab === "pending" ? "暂无待上传记录" :
+                   currentTab === "uploaded" ? "暂无已上传记录" : "暂无草稿记录"}
+                </p>
+              </div>
+            ) : (
+              filteredRecords.map((record) => (
+                <Card key={record.id} className="border border-gray-100 hover:border-gray-200 transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <div>
+                          <span className="font-medium">{record.serviceType}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-3 w-3 text-gray-400" />
+                            <span className="text-sm text-gray-600">
+                              {record.date} {record.time}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={getStatusColor(record.status)}>
-                        {getStatusText(record.status)}
-                      </Badge>
-                      {localRecords.some((lr) => lr.id === record.id) && (
-                        <>
-                          <Badge variant="outline" className={getUploadStatusColor(record.uploadStatus)}>
-                            <div className="flex items-center gap-1">
-                              {getUploadStatusIcon(record.uploadStatus)}
-                              {getUploadStatusText(record.uploadStatus)}
-                            </div>
-                          </Badge>
-                          <div className="flex gap-1">
-                            {(record.uploadStatus === "pending" || record.uploadStatus === "failed") && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={getStatusColor(record.status)}>
+                          {getStatusText(record.status)}
+                        </Badge>
+                        {localRecords.some((lr) => lr.id === record.id) && (
+                          <>
+                            <Badge variant="outline" className={getUploadStatusColor(record.uploadStatus)}>
+                              <div className="flex items-center gap-1">
+                                {getUploadStatusIcon(record.uploadStatus)}
+                                {getUploadStatusText(record.uploadStatus)}
+                              </div>
+                            </Badge>
+                            <div className="flex gap-1">
+                              {(record.uploadStatus === "pending" || record.uploadStatus === "failed") && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => uploadRecord(record.id)}
+                                  disabled={uploadingRecords.has(record.id)}
+                                  className="text-xs"
+                                >
+                                  {uploadingRecords.has(record.id) ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Upload className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => uploadRecord(record.id)}
-                                disabled={uploadingRecords.has(record.id)}
-                                className="text-xs"
+                                onClick={() => deleteRecord(record.id)}
+                                className="text-xs text-red-600 border-red-200 hover:bg-red-50"
                               >
-                                {uploadingRecords.has(record.id) ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Upload className="h-3 w-3" />
-                                )}
+                                <Trash2 className="h-3 w-3" />
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteRecord(record.id)}
-                              className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-gray-400" />
+                        <span className="text-gray-600">{record.location}</span>
+                      </div>
+
+                      {Object.keys(record.vitals).length > 0 && (
+                        <div className="flex items-center gap-4 mt-2">
+                          {record.vitals.bloodPressure && (
+                            <div className="flex items-center gap-1">
+                              <Heart className="h-3 w-3 text-red-500" />
+                              <span className="text-xs">{record.vitals.bloodPressure}</span>
+                            </div>
+                          )}
+                          {record.vitals.heartRate && (
+                            <div className="flex items-center gap-1">
+                              <Activity className="h-3 w-3 text-blue-500" />
+                              <span className="text-xs">{record.vitals.heartRate}bpm</span>
+                            </div>
+                          )}
+                          {record.vitals.temperature && (
+                            <div className="flex items-center gap-1">
+                              <Thermometer className="h-3 w-3 text-orange-500" />
+                              <span className="text-xs">{record.vitals.temperature}°C</span>
+                            </div>
+                          )}
+                        </div>
                       )}
-                    </div>
-                  </div>
 
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3 w-3 text-gray-400" />
-                      <span className="text-gray-600">{record.location}</span>
-                    </div>
+                      <p className="text-gray-700 text-sm leading-relaxed">{record.observations}</p>
 
-                    {Object.keys(record.vitals).length > 0 && (
-                      <div className="flex items-center gap-4 mt-2">
-                        {record.vitals.bloodPressure && (
+                      <div className="flex items-center gap-4 pt-2 border-t text-xs text-gray-500">
+                        {record.photos.length > 0 && (
                           <div className="flex items-center gap-1">
-                            <Heart className="h-3 w-3 text-red-500" />
-                            <span className="text-xs">{record.vitals.bloodPressure}</span>
+                            <Camera className="h-3 w-3" />
+                            <span>{record.photos.length}张照片</span>
                           </div>
                         )}
-                        {record.vitals.heartRate && (
+                        {record.audioNotes.length > 0 && (
                           <div className="flex items-center gap-1">
-                            <Activity className="h-3 w-3 text-blue-500" />
-                            <span className="text-xs">{record.vitals.heartRate}bpm</span>
+                            <Mic className="h-3 w-3" />
+                            <span>{record.audioNotes.length}段录音</span>
                           </div>
                         )}
-                        {record.vitals.temperature && (
+                        {record.recordingDuration && (
                           <div className="flex items-center gap-1">
-                            <Thermometer className="h-3 w-3 text-orange-500" />
-                            <span className="text-xs">{record.vitals.temperature}°C</span>
+                            <Clock className="h-3 w-3" />
+                            <span>{formatTime(record.recordingDuration)}</span>
+                          </div>
+                        )}
+                        {record.audioRecording && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => playAudio(record.audioRecording!)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            播放
+                          </Button>
+                        )}
+                        {record.uploadedAt && (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-3 w-3" />
+                            <span>已同步</span>
                           </div>
                         )}
                       </div>
-                    )}
-
-                    <p className="text-gray-700 text-sm leading-relaxed">{record.observations}</p>
-
-                    <div className="flex items-center gap-4 pt-2 border-t text-xs text-gray-500">
-                      {record.photos.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Camera className="h-3 w-3" />
-                          <span>{record.photos.length}张照片</span>
-                        </div>
-                      )}
-                      {record.audioNotes.length > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Mic className="h-3 w-3" />
-                          <span>{record.audioNotes.length}段录音</span>
-                        </div>
-                      )}
-                      {record.recordingDuration && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatTime(record.recordingDuration)}</span>
-                        </div>
-                      )}
-                      {record.audioRecording && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => playAudio(record.audioRecording!)}
-                          className="h-6 px-2 text-xs"
-                        >
-                          <Play className="h-3 w-3 mr-1" />
-                          播放
-                        </Button>
-                      )}
-                      {record.uploadedAt && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-3 w-3" />
-                          <span>已同步</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
