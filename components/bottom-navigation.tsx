@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Home, Calendar, Users, FileText, User } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface BottomNavigationProps {
   activeTab?: string
@@ -44,10 +45,15 @@ const navItems = [
 
 export function BottomNavigation({ activeTab }: BottomNavigationProps) {
   const pathname = usePathname()
+  const isMobile = useIsMobile()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-      <div className="flex items-center justify-around h-16 max-w-md mx-auto px-4">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-lg border-t border-gray-100/50 z-50 shadow-2xl">
+      <div className={cn(
+        "flex items-center justify-around px-2 transition-all duration-200",
+        isMobile ? "h-20 pb-safe" : "h-16",
+        "max-w-screen-lg mx-auto"
+      )}>
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeTab === item.id || pathname === item.href
@@ -57,13 +63,37 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
               key={item.id}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-lg transition-colors",
-                "min-w-0 flex-1",
-                isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground",
+                "flex flex-col items-center justify-center gap-1 py-2 px-3 rounded-xl transition-all duration-300",
+                "min-w-0 flex-1 relative transform active:scale-95",
+                "group hover:bg-gray-50/80",
+                isActive 
+                  ? "text-primary" 
+                  : "text-gray-600 hover:text-gray-800",
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <div className="relative flex flex-col items-center gap-1">
+                <div className={cn(
+                  "relative p-1.5 rounded-lg transition-all duration-300",
+                  isActive ? "bg-primary/10" : "group-hover:bg-gray-100/50"
+                )}>
+                  <Icon className={cn(
+                    "transition-all duration-300",
+                    isMobile ? "h-6 w-6" : "h-5 w-5",
+                    isActive ? "transform scale-110" : "group-hover:scale-105"
+                  )} />
+                  {isActive && (
+                    <div className="absolute inset-0 bg-primary/5 rounded-lg animate-pulse"></div>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-xs transition-all duration-300",
+                  isMobile ? "text-xs" : "text-[10px]",
+                  isActive ? "font-semibold text-primary" : "font-medium group-hover:font-medium"
+                )}>{item.label}</span>
+                {isActive && (
+                  <div className="w-1 h-1 bg-primary rounded-full absolute -bottom-0.5 animate-pulse"></div>
+                )}
+              </div>
             </Link>
           )
         })}

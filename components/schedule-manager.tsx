@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Clock,
   MapPin,
@@ -105,6 +106,7 @@ export function ScheduleManager() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false)
+  const isMobile = useIsMobile()
   const [newAppointment, setNewAppointment] = useState({
     time: "",
     duration: "1小时",
@@ -215,21 +217,28 @@ export function ScheduleManager() {
 
   if (selectedAppointment) {
     return (
-      <div className="p-4 space-y-4 max-w-md mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedAppointment(null)} className="p-2">
+      <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedAppointment(null)} 
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
             ←
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">服务详情</h1>
-            <p className="text-sm text-muted-foreground">{selectedAppointment.patientName}</p>
+            <h1 className="text-xl font-semibold text-gray-800">服务详情</h1>
+            <p className="text-sm text-gray-600">{selectedAppointment.patientName}</p>
           </div>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" />
+        <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
               服务信息
             </CardTitle>
           </CardHeader>
@@ -360,48 +369,58 @@ export function ScheduleManager() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">日程管理</h1>
-          <p className="text-sm text-muted-foreground">管理每日服务安排</p>
+        <div className="text-center py-2">
+          <h1 className="text-2xl font-semibold text-gray-800">日程管理</h1>
+          <p className="text-sm text-gray-600 mt-1">管理每日服务安排</p>
         </div>
 
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
+        <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => navigateDate("prev")} className="p-2">
-                <ChevronLeft className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigateDate("prev")} 
+                className="p-3 rounded-full hover:bg-gray-100"
+              >
+                <ChevronLeft className="h-5 w-5" />
               </Button>
               <div className="text-center">
-                <p className="font-medium">{formatDate(selectedDate)}</p>
+                <p className="font-semibold text-lg text-gray-800">{formatDate(selectedDate)}</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => navigateDate("next")} className="p-2">
-                <ChevronRight className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigateDate("next")} 
+                className="p-3 rounded-full hover:bg-gray-100"
+              >
+                <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-4 gap-4 text-center">
-            <div>
-              <div className="text-lg font-semibold text-gray-600">4</div>
-              <div className="text-xs text-muted-foreground">总预约</div>
+      <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+        <CardContent className="p-6">
+          <div className={`grid grid-cols-4 gap-4 text-center`}>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-blue-600">4</div>
+              <div className="text-xs text-blue-700 mt-1">总预约</div>
             </div>
-            <div>
-              <div className="text-lg font-semibold text-blue-600">1</div>
-              <div className="text-xs text-muted-foreground">进行中</div>
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-indigo-600">1</div>
+              <div className="text-xs text-indigo-700 mt-1">进行中</div>
             </div>
-            <div>
-              <div className="text-lg font-semibold text-green-600">1</div>
-              <div className="text-xs text-muted-foreground">已完成</div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-green-600">1</div>
+              <div className="text-xs text-green-700 mt-1">已完成</div>
             </div>
-            <div>
-              <div className="text-lg font-semibold text-orange-600">2</div>
-              <div className="text-xs text-muted-foreground">待收款</div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-amber-600">2</div>
+              <div className="text-xs text-amber-700 mt-1">待收款</div>
             </div>
           </div>
         </CardContent>
@@ -411,10 +430,10 @@ export function ScheduleManager() {
         {mockAppointments.map((appointment) => (
           <Card
             key={appointment.id}
-            className="shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+            className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl cursor-pointer hover:bg-white/90 transition-all duration-200 hover:scale-[1.02]"
             onClick={() => setSelectedAppointment(appointment)}
           >
-            <CardContent className="p-4">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-primary" />
@@ -480,8 +499,8 @@ export function ScheduleManager() {
 
       <Dialog open={showNewAppointmentModal} onOpenChange={setShowNewAppointmentModal}>
         <DialogTrigger asChild>
-          <Button className="w-full bg-transparent" variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button className="w-full bg-primary/90 hover:bg-primary rounded-2xl py-4 font-medium shadow-lg" variant="default">
+            <Plus className="h-5 w-5 mr-2" />
             添加新预约
           </Button>
         </DialogTrigger>

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Search,
   Users,
@@ -132,6 +133,7 @@ export function PatientList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
   const [showNewFamilyModal, setShowNewFamilyModal] = useState(false)
+  const isMobile = useIsMobile()
   const [newFamily, setNewFamily] = useState({
     householdHead: "",
     address: "",
@@ -229,14 +231,19 @@ export function PatientList() {
 
   if (selectedFamily) {
     return (
-      <div className="p-4 space-y-4 max-w-md mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedFamily(null)} className="p-2">
+      <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedFamily(null)} 
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
             ←
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">{selectedFamily.householdHead}家</h1>
-            <p className="text-sm text-muted-foreground">家庭档案管理</p>
+            <h1 className="text-xl font-semibold text-gray-800">{selectedFamily.householdHead}家</h1>
+            <p className="text-sm text-gray-600">家庭档案管理</p>
           </div>
         </div>
 
@@ -346,38 +353,38 @@ export function PatientList() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">患者管理</h1>
-          <p className="text-sm text-muted-foreground">管理患者家庭档案</p>
+        <div className="text-center py-2">
+          <h1 className="text-2xl font-semibold text-gray-800">患者管理</h1>
+          <p className="text-sm text-gray-600 mt-1">管理患者家庭档案</p>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="搜索患者姓名或地址..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-11 py-3 rounded-2xl border-0 bg-white/80 backdrop-blur-sm shadow-none"
           />
         </div>
       </div>
 
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
+      <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+        <CardContent className="p-6">
           <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-lg font-semibold text-primary">12</div>
-              <div className="text-xs text-muted-foreground">总家庭</div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-blue-600">12</div>
+              <div className="text-xs text-blue-700 mt-1">总家庭</div>
             </div>
-            <div>
-              <div className="text-lg font-semibold text-accent">18</div>
-              <div className="text-xs text-muted-foreground">总患者</div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-green-600">18</div>
+              <div className="text-xs text-green-700 mt-1">总患者</div>
             </div>
-            <div>
-              <div className="text-lg font-semibold text-orange-600">2</div>
-              <div className="text-xs text-muted-foreground">欠费家庭</div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
+              <div className="text-2xl font-bold text-amber-600">2</div>
+              <div className="text-xs text-amber-700 mt-1">欠费家庭</div>
             </div>
           </div>
         </CardContent>
@@ -387,10 +394,10 @@ export function PatientList() {
         {mockFamilies.map((family) => (
           <Card
             key={family.id}
-            className="shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+            className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl cursor-pointer hover:bg-white/90 transition-all duration-200 hover:scale-[1.02]"
             onClick={() => setSelectedFamily(family)}
           >
-            <CardContent className="p-4">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-primary" />
@@ -436,8 +443,8 @@ export function PatientList() {
 
       <Dialog open={showNewFamilyModal} onOpenChange={setShowNewFamilyModal}>
         <DialogTrigger asChild>
-          <Button className="w-full bg-transparent" variant="outline">
-            <Users className="h-4 w-4 mr-2" />
+          <Button className="w-full bg-primary/90 hover:bg-primary rounded-2xl py-4 font-medium shadow-lg" variant="default">
+            <Users className="h-5 w-5 mr-2" />
             添加新患者家庭
           </Button>
         </DialogTrigger>

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   User,
   Settings,
@@ -37,6 +38,7 @@ import {
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const isMobile = useIsMobile()
 
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAccountSettings, setShowAccountSettings] = useState(false)
@@ -98,29 +100,29 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="pb-20 p-4 space-y-4 max-w-md mx-auto">
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4 mb-4">
-              <Avatar className="h-16 w-16">
+    <div className="min-h-screen bg-gray-50/30">
+      <main className={`pb-24 space-y-3 ${isMobile ? 'px-4' : 'px-6 max-w-2xl mx-auto'}`}>
+        <Card className="shadow-none border-0 bg-white/70 backdrop-blur-sm rounded-2xl mt-4">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Avatar className={`${isMobile ? 'h-20 w-20' : 'h-24 w-24'} ring-2 ring-primary/20`}>
                 <AvatarImage src="/caring-doctor.png" />
-                <AvatarFallback className="bg-primary text-primary-foreground text-lg">张</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-xl font-semibold">张</AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">{userProfile.name}</h2>
-                <p className="text-sm text-muted-foreground">{userProfile.level}</p>
-                <Badge variant="secondary" className="text-xs mt-1">
+                <h2 className="text-xl font-semibold text-gray-800">{userProfile.name}</h2>
+                <p className="text-sm text-gray-600 mt-1">{userProfile.level}</p>
+                <Badge variant="secondary" className="text-xs mt-2 bg-primary/10 text-primary border-primary/20">
                   工号: {userProfile.workId}
                 </Badge>
               </div>
               <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="rounded-full p-2 hover:bg-gray-100">
                     <Edit className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className={`${isMobile ? 'max-w-sm' : 'max-w-md'} rounded-2xl border-0 shadow-2xl bg-white/95 backdrop-blur-lg`}>
                   <DialogHeader>
                     <DialogTitle>编辑个人信息</DialogTitle>
                   </DialogHeader>
@@ -175,112 +177,132 @@ export default function ProfilePage() {
               </Dialog>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t">
-              <div>
-                <div className="text-lg font-semibold text-primary">156</div>
-                <div className="text-xs text-muted-foreground">服务次数</div>
+            <div className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-3'} gap-6 text-center pt-6 border-t border-gray-100`}>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-blue-600">156</div>
+                <div className="text-xs text-blue-700 mt-1">服务次数</div>
               </div>
-              <div>
-                <div className="text-lg font-semibold text-accent">4.9</div>
-                <div className="text-xs text-muted-foreground">服务评分</div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-amber-600">4.9</div>
+                <div className="text-xs text-amber-700 mt-1">服务评分</div>
               </div>
-              <div>
-                <div className="text-lg font-semibold text-orange-600">3年</div>
-                <div className="text-xs text-muted-foreground">工作经验</div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-green-600">3年</div>
+                <div className="text-xs text-green-700 mt-1">工作经验</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" />
+        <Card className="shadow-none border-0 bg-white/70 backdrop-blur-sm rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <User className="h-4 w-4 text-primary" />
+              </div>
               个人信息
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{userProfile.phone}</span>
+          <CardContent className="space-y-4 px-6">
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Phone className="h-5 w-5 text-blue-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">{userProfile.phone}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{userProfile.email}</span>
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                <Mail className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">{userProfile.email}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{userProfile.address}</span>
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-orange-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">{userProfile.address}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">入职时间: {userProfile.joinDate}</span>
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">入职时间: {userProfile.joinDate}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Award className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{userProfile.department}</span>
+            <div className="flex items-center gap-4 py-2">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                <Award className="h-5 w-5 text-indigo-600" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">{userProfile.department}</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">我的功能</CardTitle>
+        <Card className="shadow-none border-0 bg-white/70 backdrop-blur-sm rounded-2xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">我的功能</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-1 px-6">
             <Button
               variant="ghost"
-              className="w-full justify-between p-3 h-auto bg-transparent"
+              className="w-full justify-between p-4 h-auto bg-transparent hover:bg-gray-50/80 rounded-xl"
               onClick={handleAccountSettings}
             >
-              <div className="flex items-center gap-3">
-                <Settings className="h-4 w-4 text-muted-foreground" />
-                <span>账户设置</span>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-700">账户设置</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-between p-3 h-auto bg-transparent"
+              className="w-full justify-between p-4 h-auto bg-transparent hover:bg-gray-50/80 rounded-xl"
               onClick={handleNotificationSettings}
             >
-              <div className="flex items-center gap-3">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                <span>消息通知</span>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-green-600" />
+                </div>
+                <span className="font-medium text-gray-700">消息通知</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-between p-3 h-auto bg-transparent"
+              className="w-full justify-between p-4 h-auto bg-transparent hover:bg-gray-50/80 rounded-xl"
               onClick={handlePrivacySettings}
             >
-              <div className="flex items-center gap-3">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span>隐私安全</span>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-orange-600" />
+                </div>
+                <span className="font-medium text-gray-700">隐私安全</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-between p-3 h-auto bg-transparent"
+              className="w-full justify-between p-4 h-auto bg-transparent hover:bg-gray-50/80 rounded-xl"
               onClick={handleHelpCenter}
             >
-              <div className="flex items-center gap-3">
-                <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                <span>帮助中心</span>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                  <HelpCircle className="h-5 w-5 text-purple-600" />
+                </div>
+                <span className="font-medium text-gray-700">帮助中心</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             </Button>
           </CardContent>
         </Card>
 
         <Button
           variant="outline"
-          className="w-full bg-transparent text-red-600 border-red-300 hover:bg-red-50"
+          className="w-full bg-white/70 backdrop-blur-sm text-red-600 border-red-200 hover:bg-red-50/80 rounded-2xl py-4 font-medium shadow-none"
           onClick={handleLogout}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="h-5 w-5 mr-2" />
           退出登录
         </Button>
 

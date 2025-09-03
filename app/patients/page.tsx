@@ -3,8 +3,8 @@ import { PatientList } from "@/components/patient-list"
 
 export default function PatientsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <main className="pb-20">
+    <div className="min-h-screen bg-gray-50/30">
+      <main className="pb-24 px-0">
         <PatientList />
       </main>
       <BottomNavigation activeTab="patients" />

@@ -5,7 +5,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 export default function HomePage() {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-white to-blue-50/30">
         <main className="pb-20">
           <Dashboard />
         </main>

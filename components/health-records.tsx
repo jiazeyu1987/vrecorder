@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   FileText,
   Plus,
@@ -102,6 +103,7 @@ export function HealthRecords() {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [showNewRecordModal, setShowNewRecordModal] = useState(false)
+  const isMobile = useIsMobile()
   const [newRecord, setNewRecord] = useState<Partial<HealthRecord>>({
     patientName: "",
     patientAge: 0,
@@ -181,14 +183,19 @@ export function HealthRecords() {
 
   if (selectedRecord) {
     return (
-      <div className="p-4 space-y-4 max-w-md mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedRecord(null)} className="p-2">
+      <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setSelectedRecord(null)} 
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
             ←
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">服务记录</h1>
-            <p className="text-sm text-muted-foreground">{selectedRecord.patientName}</p>
+            <h1 className="text-xl font-semibold text-gray-800">服务记录</h1>
+            <p className="text-sm text-gray-600">{selectedRecord.patientName}</p>
           </div>
         </div>
 
@@ -363,27 +370,27 @@ export function HealthRecords() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
+    <div className={`space-y-4 ${isMobile ? 'px-4 py-4' : 'px-6 py-6 max-w-2xl mx-auto'}`}>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">服务记录</h1>
-          <p className="text-sm text-muted-foreground">管理患者健康记录</p>
+        <div className="text-center py-2">
+          <h1 className="text-2xl font-semibold text-gray-800">服务记录</h1>
+          <p className="text-sm text-gray-600 mt-1">管理患者健康记录</p>
         </div>
 
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
+        <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
+          <CardContent className="p-6">
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-lg font-semibold text-primary">15</div>
-                <div className="text-xs text-muted-foreground">本周记录</div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-blue-600">15</div>
+                <div className="text-xs text-blue-700 mt-1">本周记录</div>
               </div>
-              <div>
-                <div className="text-lg font-semibold text-orange-600">2</div>
-                <div className="text-xs text-muted-foreground">待完成</div>
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-amber-600">2</div>
+                <div className="text-xs text-amber-700 mt-1">待完成</div>
               </div>
-              <div>
-                <div className="text-lg font-semibold text-green-600">13</div>
-                <div className="text-xs text-muted-foreground">已完成</div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4">
+                <div className="text-2xl font-bold text-green-600">13</div>
+                <div className="text-xs text-green-700 mt-1">已完成</div>
               </div>
             </div>
           </CardContent>
@@ -394,10 +401,10 @@ export function HealthRecords() {
         {mockRecords.map((record) => (
           <Card
             key={record.id}
-            className="shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+            className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl cursor-pointer hover:bg-white/90 transition-all duration-200 hover:scale-[1.02]"
             onClick={() => setSelectedRecord(record)}
           >
-            <CardContent className="p-4">
+            <CardContent className="p-6">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
@@ -456,8 +463,8 @@ export function HealthRecords() {
 
       <Dialog open={showNewRecordModal} onOpenChange={setShowNewRecordModal}>
         <DialogTrigger asChild>
-          <Button className="w-full bg-transparent" variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button className="w-full bg-primary/90 hover:bg-primary rounded-2xl py-4 font-medium shadow-lg" variant="default">
+            <Plus className="h-5 w-5 mr-2" />
             创建新记录
           </Button>
         </DialogTrigger>
