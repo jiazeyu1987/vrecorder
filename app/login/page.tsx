@@ -2,13 +2,15 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Phone, AlertCircle } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/components/auth-provider"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -18,7 +20,33 @@ export default function LoginPage() {
     phone: "",
     password: "",
   })
+  const [rememberMe, setRememberMe] = useState(false)
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth()
   const router = useRouter()
+
+  // 如果用户已经登录，直接跳转到主页
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, authLoading, router])
+
+  // 在认证状态加载中时，显示加载界面
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">检查登录状态...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 如果已经认证，不显示登录表单（避免闪烁）
+  if (isAuthenticated) {
+    return null
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,16 +57,14 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       if (formData.phone === "13800001234" && formData.password === "123456") {
-        // Store user session
-        localStorage.setItem("isAuthenticated", "true")
-        localStorage.setItem(
-          "userInfo",
-          JSON.stringify({
-            name: "张医生",
-            phone: formData.phone,
-            workId: "HC001234",
-          }),
-        )
+        const userData = {
+          name: "张医生",
+          phone: formData.phone,
+          workId: "HC001234",
+        }
+        
+        // 使用AuthProvider的login方法，并传递记住我选项
+        login(userData, rememberMe)
         router.push("/")
       } else {
         setError("手机号或密码错误")
@@ -100,6 +126,17 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                  记住我，7天内自动登录
+                </Label>
               </div>
 
               {error && (

@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { SessionManager } from "@/lib/session-manager"
 
 interface User {
   name: string
@@ -14,9 +15,10 @@ interface User {
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  login: (user: User) => void
+  login: (user: User, rememberMe?: boolean) => void
   logout: () => void
   isLoading: boolean
+  checkAuthStatus: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,45 +30,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const authStatus = localStorage.getItem("isAuthenticated")
-      const userInfo = localStorage.getItem("userInfo")
-
-      if (authStatus === "true" && userInfo) {
-        const parsedUser = JSON.parse(userInfo)
-        setUser(parsedUser)
-        setIsAuthenticated(true)
+  // 检查认证状态
+  const checkAuthStatus = async (): Promise<void> => {
+    try {
+      const validation = SessionManager.validateSession()
+      
+      if (validation.isValid) {
+        const session = SessionManager.getSession()
+        if (session) {
+          setUser(session.user)
+          setIsAuthenticated(true)
+          
+          // 如果会话快过期了，自动刷新
+          if (SessionManager.shouldRefreshSession()) {
+            SessionManager.refreshSession()
+          }
+        }
       } else {
-        setIsAuthenticated(false)
+        // 清理无效的会话状态
         setUser(null)
+        setIsAuthenticated(false)
+        SessionManager.clearSession()
+        
+        // 根据失效原因显示不同的提示
+        if (validation.reason === "session_expired") {
+          console.log("会话已过期，请重新登录")
+        } else if (validation.reason === "remember_me_expired") {
+          console.log("自动登录已过期，请重新登录")
+        }
+        
+        // 只有在不是登录页面时才重定向
         if (pathname !== "/login") {
           router.push("/login")
         }
       }
+    } catch (error) {
+      console.error("检查认证状态失败:", error)
+      // 出现错误时清理状态
+      setUser(null)
+      setIsAuthenticated(false)
+      SessionManager.clearSession()
+      
+      // 只有在不是登录页面时才重定向
+      if (pathname !== "/login") {
+        router.push("/login")
+      }
+    }
+  }
+
+  useEffect(() => {
+    const initAuth = async () => {
+      await checkAuthStatus()
       setIsLoading(false)
     }
 
-    checkAuth()
-  }, [pathname, router])
+    initAuth()
+  }, []) // 移除pathname和router依赖，避免无限循环
 
-  const login = (userData: User) => {
+  // 单独处理路由变化
+  useEffect(() => {
+    if (!isLoading) {
+      checkAuthStatus()
+    }
+  }, [pathname])
+
+  // 设置定时检查和页面可见性监听
+  useEffect(() => {
+    // 设置定时检查（每3分钟检查一次）
+    const interval = setInterval(checkAuthStatus, 3 * 60 * 1000)
+    
+    // 监听页面可见性变化，当页面重新变为可见时检查认证状态
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isLoading) {
+        checkAuthStatus()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isLoading])
+
+  const login = (userData: User, rememberMe: boolean = false) => {
     setUser(userData)
     setIsAuthenticated(true)
-    localStorage.setItem("isAuthenticated", "true")
-    localStorage.setItem("userInfo", JSON.stringify(userData))
+    
+    // 使用SessionManager创建会话
+    SessionManager.createSession(userData, rememberMe)
   }
 
   const logout = () => {
     setUser(null)
     setIsAuthenticated(false)
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("userInfo")
+    SessionManager.clearSession()
     router.push("/login")
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, isLoading }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, isLoading, checkAuthStatus }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 
