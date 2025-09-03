@@ -39,6 +39,7 @@ import {
   UserPlus,
   MessageCircle,
   Clock,
+  Settings,
 } from "lucide-react"
 
 interface HealthRecord {
@@ -1052,167 +1053,502 @@ export function PatientList() {
       .sort((a: any, b: any) => new Date(b.date + " " + b.time).getTime() - new Date(a.date + " " + a.time).getTime())
 
     return (
-      <div className={`space-y-4 ${isMobile ? "px-4 py-4" : "px-6 py-6 max-w-2xl mx-auto"}`}>
-        <div className="flex items-center gap-3 mb-6">
+      <div className={cn(
+        "min-h-screen bg-gradient-to-br from-gray-50/80 via-blue-50/40 to-indigo-50/30",
+        "selection:bg-blue-200 selection:text-blue-900", // 改善文字选择体验
+        deviceType === "mobile" ? "px-3 py-4" : deviceType === "tablet" ? "px-4 py-5" : "px-6 py-6 max-w-4xl mx-auto"
+      )}>
+        {/* 微信小程序风格的顶部导航 - 家庭档案专用 */}
+        <div className={cn(
+          "flex items-center gap-3 mb-6 px-1 relative",
+          "before:absolute before:inset-0 before:bg-white/60 before:backdrop-blur-md before:rounded-2xl before:-z-10",
+          "before:shadow-lg before:border before:border-white/30",
+          deviceType === "mobile" ? "py-3" : "py-2"
+        )}>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedFamily(null)}
-            className="p-2 rounded-full hover:bg-gray-100"
+            className={cn(
+              "rounded-full hover:bg-white/90 active:scale-95 transition-all duration-200",
+              "bg-white/80 backdrop-blur-md shadow-lg border border-white/40",
+              "hover:shadow-xl group relative overflow-hidden",
+              deviceType === "mobile" ? "h-10 w-10" : "h-9 w-9"
+            )}
+            aria-label="返回患者列表"
           >
-            ←
+            <ChevronRight className={cn(
+              "text-gray-700 rotate-180",
+              deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"
+            )} />
           </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-800">{selectedFamily.householdHead}家</h1>
-            <p className="text-sm text-gray-600">家庭档案管理</p>
+          <div className="flex-1">
+            <h1 className={cn(
+              "font-semibold text-gray-900",
+              deviceType === "mobile" ? "text-xl" : "text-lg"
+            )}>{selectedFamily.householdHead}家</h1>
+            <p className={cn(
+              "text-gray-600",
+              deviceType === "mobile" ? "text-sm" : "text-xs"
+            )}>家庭档案管理</p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className={cn(
+                "bg-blue-500/10 hover:bg-blue-500/20 border-blue-200 text-blue-700",
+                "rounded-xl shadow-md backdrop-blur-sm active:scale-95 transition-all duration-200",
+                deviceType === "mobile" ? "px-3 py-2 text-xs gap-1" : "px-2 py-1.5 text-xs gap-1"
+              )}
+              onClick={() => {
+                // 添加编辑家庭信息逻辑
+              }}
+            >
+              <Edit className={cn(
+                deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+              )} />
+              编辑
+            </Button>
           </div>
         </div>
 
-        <Card className="shadow-sm">
+        {/* 微信小程序风格的家庭信息卡片 */}
+        <Card className={cn(
+          "shadow-xl border-0 bg-white/98 backdrop-blur-xl rounded-3xl mb-4",
+          "border border-white/30 relative overflow-hidden",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-blue-50/30 before:to-indigo-50/20 before:-z-10"
+        )}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              家庭信息
+            <CardTitle className={cn(
+              "flex items-center gap-3",
+              deviceType === "mobile" ? "text-base" : "text-sm"
+            )}>
+              <div className="flex items-center justify-center w-8 h-8 bg-blue-500/10 rounded-full">
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
+              <span className="text-gray-800">家庭基本信息</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 微信小程序信息项目 */}
+            <div className="bg-gray-50/60 rounded-2xl p-3 space-y-3 border border-gray-100/80">
+              <div className="flex items-center gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                <div className="bg-blue-100/70 hover:bg-blue-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
+                  <MapPin className={cn(
+                    "text-blue-600",
+                    deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <p className={cn(
+                    "text-gray-500 font-medium mb-0.5",
+                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                  )}>家庭地址</p>
+                  <p className={cn(
+                    "text-gray-800 font-medium",
+                    deviceType === "mobile" ? "text-sm leading-relaxed" : "text-xs leading-relaxed"
+                  )}>{selectedFamily.address}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                <div className="bg-green-100/70 hover:bg-green-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
+                  <Phone className={cn(
+                    "text-green-600",
+                    deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <p className={cn(
+                    "text-gray-500 font-medium mb-0.5",
+                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                  )}>联系电话</p>
+                  <p className={cn(
+                    "text-gray-800 font-medium",
+                    deviceType === "mobile" ? "text-sm" : "text-xs"
+                  )}>{selectedFamily.phone}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                <div className="bg-purple-100/70 hover:bg-purple-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
+                  <Clock className={cn(
+                    "text-purple-600",
+                    deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                  )} />
+                </div>
+                <div className="flex-1">
+                  <p className={cn(
+                    "text-gray-500 font-medium mb-0.5",
+                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                  )}>最近服务</p>
+                  <p className={cn(
+                    "text-gray-800 font-medium",
+                    deviceType === "mobile" ? "text-sm" : "text-xs"
+                  )}>{selectedFamily.lastService}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 微信小程序风格的统计信息 */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center bg-blue-50/60 rounded-xl p-3 border border-blue-100/60">
+                  <p className={cn(
+                    "font-bold text-blue-600 mb-1",
+                    deviceType === "mobile" ? "text-lg" : "text-base"
+                  )}>{selectedFamily.totalMembers}</p>
+                  <p className={cn(
+                    "text-gray-600 font-medium",
+                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                  )}>家庭成员</p>
+                </div>
+                <div className="text-center bg-green-50/60 rounded-xl p-3 border border-green-100/60">
+                  <p className={cn(
+                    "font-bold text-green-600 mb-1",
+                    deviceType === "mobile" ? "text-lg" : "text-base"
+                  )}>{allFamilyRecords.length}</p>
+                  <p className={cn(
+                    "text-gray-600 font-medium",
+                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                  )}>健康记录</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 微信小程序风格的家庭成员卡片 */}
+        <Card className={cn(
+          "shadow-xl border-0 bg-white/98 backdrop-blur-xl rounded-3xl mb-4",
+          "border border-white/30 relative overflow-hidden",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-green-50/30 before:to-emerald-50/20 before:-z-10"
+        )}>
+          <CardHeader className="pb-3">
+            <CardTitle className={cn(
+              "flex items-center justify-between",
+              deviceType === "mobile" ? "text-base" : "text-sm"
+            )}>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-green-500/10 rounded-full">
+                  <Users className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-gray-800">家庭成员</span>
+              </div>
+              <Badge variant="secondary" className={cn(
+                "bg-green-100/70 text-green-700 border-green-200/40 rounded-full",
+                deviceType === "mobile" ? "text-xs px-2 py-0.5" : "text-[10px] px-1.5 py-0.5"
+              )}>
+                {selectedFamily.totalMembers}人
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{selectedFamily.address}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{selectedFamily.phone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">最近服务: {selectedFamily.lastService}</span>
-            </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-3">
+              {selectedFamily.members.map((member) => (
+                <div key={member.id} className={cn(
+                  "group bg-gray-50/80 rounded-2xl border border-gray-100/80 transition-all duration-200",
+                  "hover:bg-white hover:border-gray-200/90 hover:shadow-lg cursor-pointer",
+                  "active:scale-[0.99] transform overflow-hidden",
+                  deviceType === "mobile" ? "p-4" : "p-3"
+                )}>
+                  {/* 成员头部信息 */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-500 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
+                        <User className={cn(
+                          "text-white",
+                          deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
+                        )} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn(
+                            "font-bold text-gray-900",
+                            deviceType === "mobile" ? "text-base" : "text-sm"
+                          )}>{member.name}</span>
+                          <Badge variant="outline" className={cn(
+                            "bg-blue-50/60 text-blue-700 border-blue-200/40 rounded-full",
+                            deviceType === "mobile" ? "text-xs px-2 py-0.5" : "text-[10px] px-1.5 py-0.5"
+                          )}>
+                            {member.relationship}
+                          </Badge>
+                        </div>
+                        <p className={cn(
+                          "text-gray-600 font-medium",
+                          deviceType === "mobile" ? "text-sm" : "text-xs"
+                        )}>{member.age}岁 · {member.gender}</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn(
+                      getPaymentStatusColor(member.paymentStatus),
+                      "rounded-full font-medium border-0 shadow-sm",
+                      deviceType === "mobile" ? "text-xs px-2.5 py-1" : "text-[10px] px-2 py-0.5"
+                    )}>
+                      {getPaymentStatusText(member.paymentStatus)}
+                    </Badge>
+                  </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">家庭成员 ({selectedFamily.totalMembers}人)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {selectedFamily.members.map((member) => (
-              <div key={member.id} className="p-3 bg-muted/50 rounded-lg border space-y-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <span className="font-medium">{member.name}</span>
-                      <span className="text-sm text-muted-foreground ml-2">({member.relationship})</span>
+                  {/* 成员详细信息 */}
+                  <div className="bg-white/60 rounded-xl p-3 space-y-2 border border-gray-100/60">
+                    {/* 健康状况 */}
+                    <div className="flex items-start gap-2">
+                      <div className="bg-red-100/70 p-1 rounded-lg mt-0.5">
+                        <Heart className={cn(
+                          "text-red-500",
+                          deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                        )} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn(
+                          "text-gray-600 font-medium mb-1",
+                          deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                        )}>健康状况</p>
+                        <div className="flex gap-1 flex-wrap">
+                          {member.conditions.map((condition, index) => (
+                            <Badge key={index} 
+                              variant="secondary" 
+                              className={cn(
+                                "bg-red-50/80 text-red-700 border border-red-200/60 rounded-lg",
+                                deviceType === "mobile" ? "text-[10px] px-1.5 py-0.5" : "text-[9px] px-1 py-0.5"
+                              )}
+                            >
+                              {condition}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 用药情况 */}
+                    {member.medications && (
+                      <div className="flex items-start gap-2">
+                        <div className="bg-blue-100/70 p-1 rounded-lg mt-0.5">
+                          <Pill className={cn(
+                            "text-blue-500",
+                            deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                          )} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={cn(
+                            "text-gray-600 font-medium mb-1",
+                            deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                          )}>用药情况</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {member.medications.map((medication, index) => (
+                              <Badge key={index} 
+                                variant="outline" 
+                                className={cn(
+                                  "bg-blue-50/80 text-blue-700 border border-blue-200/60 rounded-lg",
+                                  deviceType === "mobile" ? "text-[10px] px-1.5 py-0.5" : "text-[9px] px-1 py-0.5"
+                                )}
+                              >
+                                {medication}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 服务信息 */}
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                      <div className="text-center">
+                        <p className={cn(
+                          "text-gray-500 font-medium mb-0.5",
+                          deviceType === "mobile" ? "text-[10px]" : "text-[9px]"
+                        )}>最近服务</p>
+                        <p className={cn(
+                          "text-gray-800 font-semibold",
+                          deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                        )}>{member.lastService}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className={cn(
+                          "text-gray-500 font-medium mb-0.5",
+                          deviceType === "mobile" ? "text-[10px]" : "text-[9px]"
+                        )}>套餐类型</p>
+                        <p className={cn(
+                          "text-gray-800 font-semibold",
+                          deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                        )}>{member.packageType}</p>
+                      </div>
                     </div>
                   </div>
-                  <Badge variant="outline" className={getPaymentStatusColor(member.paymentStatus)}>
-                    {getPaymentStatusText(member.paymentStatus)}
-                  </Badge>
-                </div>
 
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>
-                    {member.age}岁 | {member.gender}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-3 w-3" />
-                    <span>{member.conditions.join(", ")}</span>
-                  </div>
-                  {member.medications && (
-                    <div className="flex items-center gap-2">
-                      <Pill className="h-3 w-3" />
-                      <span>{member.medications.join(", ")}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3 w-3" />
-                    <span>最近服务: {member.lastService}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-3 w-3" />
-                    <span>{member.packageType}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 bg-transparent"
-                    onClick={() => setSelectedPatient(member)}
-                  >
-                    查看详情
-                  </Button>
-                  {member.paymentStatus === "overdue" && (
-                    <Button size="sm" variant="outline" className="text-orange-600 border-orange-300 bg-transparent">
-                      催缴
+                  {/* 成员操作按钮 */}
+                  <div className="flex gap-2 pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "flex-1 bg-blue-50/60 hover:bg-blue-100/60 border-blue-200/60 text-blue-700",
+                        "rounded-xl transition-all duration-150 active:scale-95",
+                        deviceType === "mobile" ? "h-8 text-xs" : "h-7 text-[10px]"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedPatient(member)
+                      }}
+                    >
+                      查看详情
                     </Button>
-                  )}
+                    {member.paymentStatus === "overdue" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className={cn(
+                          "bg-orange-50/60 hover:bg-orange-100/60 border-orange-200/60 text-orange-700",
+                          "rounded-xl transition-all duration-150 active:scale-95",
+                          deviceType === "mobile" ? "h-8 text-xs px-3" : "h-7 text-[10px] px-2"
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // 添加催缴逻辑
+                        }}
+                      >
+                        催缴
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        {/* 微信小程序风格的家庭健康记录卡片 */}
+        <Card className={cn(
+          "shadow-xl border-0 bg-white/98 backdrop-blur-xl rounded-3xl mb-4",
+          "border border-white/30 relative overflow-hidden",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-purple-50/30 before:to-pink-50/20 before:-z-10"
+        )}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-800">家庭健康记录</span>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                  {allFamilyRecords.length}条记录
-                </Badge>
+            <CardTitle className={cn(
+              "flex items-center justify-between",
+              deviceType === "mobile" ? "text-base" : "text-sm"
+            )}>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-purple-500/10 rounded-full">
+                  <FileText className="h-4 w-4 text-purple-600" />
+                </div>
+                <span className="text-gray-800">家庭健康记录</span>
               </div>
+              <Badge variant="secondary" className={cn(
+                "bg-purple-100/70 text-purple-700 border-purple-200/40 rounded-full",
+                deviceType === "mobile" ? "text-xs px-2 py-0.5" : "text-[10px] px-1.5 py-0.5"
+              )}>
+                {allFamilyRecords.length}条记录
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {allFamilyRecords.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className={cn(
+                "space-y-3 overflow-y-auto",
+                deviceType === "mobile" ? "max-h-96" : "max-h-80"
+              )}>
                 {allFamilyRecords.map((record) => (
                   <div
                     key={`${record.patientId}-${record.id}`}
-                    className="p-4 bg-white rounded-lg border border-blue-100 cursor-pointer hover:shadow-md transition-all duration-200"
+                    className={cn(
+                      "group bg-white/90 rounded-2xl border border-purple-100/60 cursor-pointer",
+                      "hover:shadow-lg hover:border-purple-200/80 transition-all duration-200",
+                      "active:scale-[0.99] transform overflow-hidden",
+                      deviceType === "mobile" ? "p-4" : "p-3"
+                    )}
                     onClick={() => setSelectedRecord(record)}
                   >
+                    {/* 记录头部 */}
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-blue-800">{record.patientName}</span>
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                          <span className={cn(
+                            "font-bold text-purple-800",
+                            deviceType === "mobile" ? "text-sm" : "text-xs"
+                          )}>{record.patientName}</span>
+                          <Badge variant="outline" className={cn(
+                            "bg-purple-50/80 text-purple-600 border-purple-200/60 rounded-full",
+                            deviceType === "mobile" ? "text-[10px] px-1.5 py-0.5" : "text-[9px] px-1 py-0.5"
+                          )}>
                             {record.serviceType}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className={cn(
+                          "text-gray-600 font-medium",
+                          deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                        )}>
                           {record.date} {record.time}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={getStatusColor(record.status)}>
+                        <Badge variant="outline" className={cn(
+                          getStatusColor(record.status),
+                          "rounded-full border-0 shadow-sm",
+                          deviceType === "mobile" ? "text-[10px] px-2 py-0.5" : "text-[9px] px-1.5 py-0.5"
+                        )}>
                           {getStatusText(record.status)}
                         </Badge>
-                        <ChevronRight className="h-4 w-4 text-blue-400" />
+                        <div className="bg-purple-100/70 rounded-full p-1 group-hover:bg-purple-200/80 transition-colors duration-150">
+                          <ChevronRight className={cn(
+                            "text-purple-600",
+                            deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                          )} />
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 line-clamp-2 mb-3">{record.observations}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+
+                    {/* 记录内容预览 */}
+                    <div className="bg-purple-50/40 rounded-xl p-3 mb-3 border border-purple-100/60">
+                      <p className={cn(
+                        "text-gray-700 line-clamp-2 leading-relaxed",
+                        deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                      )}>{record.observations}</p>
+                    </div>
+
+                    {/* 记录附件统计 */}
+                    <div className="flex items-center gap-4 text-gray-500">
                       {record.photos.length > 0 && (
                         <div className="flex items-center gap-1">
-                          <Camera className="h-3 w-3 text-blue-500" />
-                          <span>{record.photos.length}张照片</span>
+                          <div className="bg-blue-100/70 p-1 rounded-lg">
+                            <Camera className={cn(
+                              "text-blue-600",
+                              deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                            )} />
+                          </div>
+                          <span className={cn(
+                            "font-medium",
+                            deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                          )}>{record.photos.length}张照片</span>
                         </div>
                       )}
                       {record.audioNotes.length > 0 && (
                         <div className="flex items-center gap-1">
-                          <Mic className="h-3 w-3 text-blue-500" />
-                          <span>{record.audioNotes.length}条录音</span>
+                          <div className="bg-green-100/70 p-1 rounded-lg">
+                            <Mic className={cn(
+                              "text-green-600",
+                              deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                            )} />
+                          </div>
+                          <span className={cn(
+                            "font-medium",
+                            deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                          )}>{record.audioNotes.length}条录音</span>
                         </div>
                       )}
                       {Object.keys(record.vitals).length > 0 && (
                         <div className="flex items-center gap-1">
-                          <Activity className="h-3 w-3 text-blue-500" />
-                          <span>{Object.keys(record.vitals).length}项体征</span>
+                          <div className="bg-red-100/70 p-1 rounded-lg">
+                            <Activity className={cn(
+                              "text-red-600",
+                              deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                            )} />
+                          </div>
+                          <span className={cn(
+                            "font-medium",
+                            deviceType === "mobile" ? "text-xs" : "text-[10px]"
+                          )}>{Object.keys(record.vitals).length}项体征</span>
                         </div>
                       )}
                     </div>
@@ -1220,27 +1556,203 @@ export function PatientList() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">暂无健康记录</p>
+              <div className="text-center py-8">
+                <div className={cn(
+                  "mx-auto mb-4 bg-purple-100/70 rounded-full flex items-center justify-center",
+                  deviceType === "mobile" ? "w-16 h-16" : "w-12 h-12"
+                )}>
+                  <FileText className={cn(
+                    "text-purple-400",
+                    deviceType === "mobile" ? "h-8 w-8" : "h-6 w-6"
+                  )} />
+                </div>
+                <h3 className={cn(
+                  "font-medium text-gray-600 mb-2",
+                  deviceType === "mobile" ? "text-base" : "text-sm"
+                )}>暂无健康记录</h3>
+                <p className={cn(
+                  "text-gray-500",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>请为家庭成员添加首个健康记录</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        {/* 微信小程序风格的家庭操作卡片 */}
+        <Card className={cn(
+          "shadow-xl border-0 bg-white/98 backdrop-blur-xl rounded-3xl mb-4",
+          "border border-white/30 relative overflow-hidden",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-indigo-50/30 before:to-blue-50/20 before:-z-10"
+        )}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">家庭操作</CardTitle>
+            <CardTitle className={cn(
+              "flex items-center gap-3",
+              deviceType === "mobile" ? "text-base" : "text-sm"
+            )}>
+              <div className="flex items-center justify-center w-8 h-8 bg-indigo-500/10 rounded-full">
+                <Settings className="h-4 w-4 text-indigo-600" />
+              </div>
+              <span className="text-gray-800">家庭操作</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start bg-transparent">
-              <CreditCard className="h-4 w-4 mr-2" />
-              查看家庭付款记录
-            </Button>
-            <Button variant="outline" className="w-full justify-start bg-transparent">
-              <Plus className="h-4 w-4 mr-2" />
-              添加新成员
-            </Button>
+          <CardContent className="space-y-3">
+            {/* 微信小程序风格的操作按钮网格 */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* 查看付款记录 */}
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "bg-gradient-to-br from-emerald-50/80 to-green-50/60 hover:from-emerald-100/80 hover:to-green-100/60",
+                  "border-emerald-200/60 hover:border-emerald-300/80 text-emerald-700",
+                  "rounded-2xl transition-all duration-200 active:scale-95 hover:shadow-lg",
+                  "group relative overflow-hidden",
+                  deviceType === "mobile" ? "h-auto py-4 px-3 flex-col gap-2" : "h-auto py-3 px-2 flex-col gap-1.5"
+                )}
+                onClick={() => {
+                  // 添加查看付款记录逻辑
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="bg-emerald-500/10 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
+                  <CreditCard className={cn(
+                    "text-emerald-600",
+                    deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"
+                  )} />
+                </div>
+                <span className={cn(
+                  "font-semibold text-center relative z-10",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>付款记录</span>
+              </Button>
+
+              {/* 添加新成员 */}
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "bg-gradient-to-br from-blue-50/80 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/60",
+                  "border-blue-200/60 hover:border-blue-300/80 text-blue-700",
+                  "rounded-2xl transition-all duration-200 active:scale-95 hover:shadow-lg",
+                  "group relative overflow-hidden",
+                  deviceType === "mobile" ? "h-auto py-4 px-3 flex-col gap-2" : "h-auto py-3 px-2 flex-col gap-1.5"
+                )}
+                onClick={() => {
+                  // 添加新成员逻辑
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="bg-blue-500/10 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
+                  <UserPlus className={cn(
+                    "text-blue-600",
+                    deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"
+                  )} />
+                </div>
+                <span className={cn(
+                  "font-semibold text-center relative z-10",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>添加成员</span>
+              </Button>
+
+              {/* 家庭预约 */}
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "bg-gradient-to-br from-purple-50/80 to-pink-50/60 hover:from-purple-100/80 hover:to-pink-100/60",
+                  "border-purple-200/60 hover:border-purple-300/80 text-purple-700",
+                  "rounded-2xl transition-all duration-200 active:scale-95 hover:shadow-lg",
+                  "group relative overflow-hidden",
+                  deviceType === "mobile" ? "h-auto py-4 px-3 flex-col gap-2" : "h-auto py-3 px-2 flex-col gap-1.5"
+                )}
+                onClick={() => {
+                  // 添加家庭预约逻辑
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="bg-purple-500/10 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
+                  <Calendar className={cn(
+                    "text-purple-600",
+                    deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"
+                  )} />
+                </div>
+                <span className={cn(
+                  "font-semibold text-center relative z-10",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>家庭预约</span>
+              </Button>
+
+              {/* 联系家庭 */}
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "bg-gradient-to-br from-orange-50/80 to-yellow-50/60 hover:from-orange-100/80 hover:to-yellow-100/60",
+                  "border-orange-200/60 hover:border-orange-300/80 text-orange-700",
+                  "rounded-2xl transition-all duration-200 active:scale-95 hover:shadow-lg",
+                  "group relative overflow-hidden",
+                  deviceType === "mobile" ? "h-auto py-4 px-3 flex-col gap-2" : "h-auto py-3 px-2 flex-col gap-1.5"
+                )}
+                onClick={() => {
+                  // 添加联系家庭逻辑
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                <div className="bg-orange-500/10 p-2 rounded-xl group-hover:scale-105 transition-transform duration-200">
+                  <MessageCircle className={cn(
+                    "text-orange-600",
+                    deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"
+                  )} />
+                </div>
+                <span className={cn(
+                  "font-semibold text-center relative z-10",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>联系家庭</span>
+              </Button>
+            </div>
+
+            {/* 微信小程序风格的快速操作区域 */}
+            <div className="pt-3 border-t border-gray-100">
+              <p className={cn(
+                "text-gray-600 font-medium mb-3",
+                deviceType === "mobile" ? "text-xs" : "text-[10px]"
+              )}>快速操作</p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className={cn(
+                    "flex-1 bg-gradient-to-r from-red-50/80 to-pink-50/60 hover:from-red-100/80 hover:to-pink-100/60",
+                    "border-red-200/60 hover:border-red-300/80 text-red-700",
+                    "rounded-xl transition-all duration-200 active:scale-95",
+                    deviceType === "mobile" ? "h-9 text-xs gap-1.5" : "h-8 text-[10px] gap-1"
+                  )}
+                  onClick={() => {
+                    // 添加紧急联系逻辑
+                  }}
+                >
+                  <Phone className={cn(
+                    deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                  )} />
+                  紧急联系
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className={cn(
+                    "flex-1 bg-gradient-to-r from-green-50/80 to-emerald-50/60 hover:from-green-100/80 hover:to-emerald-100/60",
+                    "border-green-200/60 hover:border-green-300/80 text-green-700",
+                    "rounded-xl transition-all duration-200 active:scale-95",
+                    deviceType === "mobile" ? "h-9 text-xs gap-1.5" : "h-8 text-[10px] gap-1"
+                  )}
+                  onClick={() => {
+                    // 添加健康记录逻辑
+                  }}
+                >
+                  <Plus className={cn(
+                    deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                  )} />
+                  新记录
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1249,7 +1761,9 @@ export function PatientList() {
 
   return (
     <div className={cn(
-      "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40",
+      "min-h-screen",
+      // 微信小程序经典背景色 - 纯净的浅色背景
+      "bg-gradient-to-br from-gray-50/50 via-white to-gray-100/30",
       "selection:bg-blue-200 selection:text-blue-900", // 改善文字选择体验
       deviceType === "mobile" ? "pb-4" : deviceType === "tablet" ? "pb-5" : "pb-6 max-w-5xl mx-auto"
     )}>
@@ -1273,12 +1787,12 @@ export function PatientList() {
           <Card
             key={family.id}
             className={cn(
-              "group bg-white/98 backdrop-blur-xl border-0 rounded-3xl overflow-hidden",
-              "shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer",
-              "hover:scale-[1.02] active:scale-[0.98] transform-gpu",
-              "border border-white/50 hover:border-blue-200/70",
-              "ring-1 ring-gray-900/[0.02] hover:ring-blue-200/50",
-              "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30",
+              // 微信小程序卡片风格 - 更简洁的设计
+              "group bg-white rounded-3xl overflow-hidden",
+              "shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer",
+              "hover:scale-[1.01] active:scale-[0.99] transform-gpu",
+              "border border-gray-100/80 hover:border-blue-200/70",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50",
               "focus-visible:border-blue-400/80" // 增强焦点可视性
             )}
             onClick={() => setSelectedFamily(family)}
@@ -1295,29 +1809,29 @@ export function PatientList() {
             <CardContent className="p-0">
               {/* 卡片头部 - 采用更现代的微信小程序风格 */}
               <div className={cn(
-                "bg-gradient-to-br from-blue-50/90 via-indigo-50/70 to-purple-50/50",
-                "border-b border-blue-100/70 relative overflow-hidden",
-                deviceType === "mobile" ? "px-4 py-4" : "px-5 py-5"
+                // 微信小程序头部风格 - 更清爽的设计
+                "bg-gradient-to-r from-blue-50/70 to-blue-50/30",
+                "border-b border-gray-100/80 relative overflow-hidden",
+                deviceType === "mobile" ? "px-4 py-3.5" : "px-5 py-4"
               )}>
-                {/* 装饰性背景元素 - 增强立体感 */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-200/25 to-transparent rounded-full -translate-y-16 translate-x-16" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-200/20 to-transparent rounded-full translate-y-12 -translate-x-12" />
-                <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-gradient-to-br from-purple-200/15 to-transparent rounded-full transform rotate-45" />
+                {/* 微信小程序风格装饰元素 - 简约几何装饰 */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100/20 rounded-full -translate-y-10 translate-x-10" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-100/15 rounded-full translate-y-8 -translate-x-8" />
                 
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-4">
                     <div className={cn(
-                      "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center",
-                      "shadow-xl border border-blue-300/60 relative overflow-hidden",
-                      "group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300",
-                      deviceType === "mobile" ? "w-12 h-12" : "w-14 h-14"
+                      // 微信小程序图标风格 - 简洁圆润设计
+                      "bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center",
+                      "shadow-md relative overflow-hidden",
+                      "group-hover:shadow-lg group-hover:scale-105 transition-all duration-200",
+                      deviceType === "mobile" ? "w-11 h-11" : "w-12 h-12"
                     )}>
-                      {/* 图标背景光效 - 增强视觉效果 */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/25 to-transparent" />
-                      <div className="absolute inset-0 bg-gradient-to-bl from-transparent via-transparent to-black/5 opacity-50" />
+                      {/* 微信小程序图标光效 - 微妙的高光效果 */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent" />
                       <Users className={cn(
                         "text-white relative z-10",
-                        deviceType === "mobile" ? "h-6 w-6" : "h-7 w-7"
+                        deviceType === "mobile" ? "h-5 w-5" : "h-6 w-6"
                       )} />
                     </div>
                     <div>
@@ -1340,18 +1854,20 @@ export function PatientList() {
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className={cn(
                       getPaymentStatusColor(family.members[0].paymentStatus),
-                      "rounded-full font-semibold border-0 shadow-md backdrop-blur-sm",
-                      deviceType === "mobile" ? "text-xs px-3 py-1.5" : "text-[10px] px-2.5 py-1"
+                      // 微信小程序状态标签风格
+                      "rounded-full font-medium border-0 shadow-sm",
+                      deviceType === "mobile" ? "text-xs px-2.5 py-1" : "text-[10px] px-2 py-0.5"
                     )}>
                       {getPaymentStatusText(family.members[0].paymentStatus)}
                     </Badge>
                     <div className={cn(
-                      "bg-blue-100/60 rounded-full p-1.5 group-hover:bg-blue-200/80 transition-colors duration-200",
-                      "min-w-[44px] min-h-[44px] flex items-center justify-center", // 确保触摸区域足够大
-                      deviceType === "mobile" ? "" : "p-1"
+                      // 微信小程序箭头指示器
+                      "bg-gray-100/80 rounded-full group-hover:bg-blue-100/80 transition-colors duration-200",
+                      "min-w-[40px] min-h-[40px] flex items-center justify-center", // 确保触摸区域足够大
+                      deviceType === "mobile" ? "p-2" : "p-1.5"
                     )}>
                       <ChevronRight className={cn(
-                        "text-blue-600 group-hover:text-blue-700 transition-colors duration-200",
+                        "text-gray-600 group-hover:text-blue-600 transition-colors duration-200",
                         deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
                       )} />
                     </div>
@@ -1359,17 +1875,17 @@ export function PatientList() {
                 </div>
               </div>
 
-                  {/* 家庭详情信息 - 优化渐变和视觉层次 */}
+                  {/* 微信小程序内容区域 - 纯净背景 */}
               <div className={cn(
-                "bg-gradient-to-br from-white/95 via-white/90 to-gray-50/80",
+                "bg-white",
                 deviceType === "mobile" ? "p-4" : "p-5"
               )}>
                 <div className="space-y-4">
-                  {/* 联系信息区域 - 提升卡片样式 */}
-                  <div className="bg-gradient-to-br from-gray-50/90 to-blue-50/30 rounded-2xl p-3 space-y-3 border border-gray-100/50 shadow-inner">
-                    {/* 地址信息 - 提升视觉效果 */}
-                    <div className="flex items-start gap-3 group/item hover:bg-white/50 rounded-xl p-2 -m-2 transition-all duration-200">
-                      <div className="bg-blue-100/80 hover:bg-blue-200/60 transition-colors duration-200 p-1.5 rounded-lg group-hover/item:scale-110 transform transition-transform duration-200">
+                  {/* 微信小程序信息卡片 - 简洁边框设计 */}
+                  <div className="bg-gray-50/60 rounded-2xl p-3 space-y-3 border border-gray-100/80">
+                    {/* 微信小程序信息项 - 简洁交互 */}
+                    <div className="flex items-start gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                      <div className="bg-blue-100/70 hover:bg-blue-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
                         <MapPin className={cn(
                           "text-blue-600",
                           deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
@@ -1387,9 +1903,9 @@ export function PatientList() {
                       </div>
                     </div>
                     
-                    {/* 联系电话 - 提升视觉效果 */}
-                    <div className="flex items-center gap-3 group/item hover:bg-white/50 rounded-xl p-2 -m-2 transition-all duration-200">
-                      <div className="bg-green-100/80 hover:bg-green-200/60 transition-colors duration-200 p-1.5 rounded-lg group-hover/item:scale-110 transform transition-transform duration-200">
+                    {/* 微信小程序联系电话 - 简洁交互 */}
+                    <div className="flex items-center gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                      <div className="bg-green-100/70 hover:bg-green-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
                         <Phone className={cn(
                           "text-green-600",
                           deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
@@ -1407,9 +1923,9 @@ export function PatientList() {
                       </div>
                     </div>
                     
-                    {/* 最近服务时间 - 提升视觉效果 */}
-                    <div className="flex items-center gap-3 group/item hover:bg-white/50 rounded-xl p-2 -m-2 transition-all duration-200">
-                      <div className="bg-purple-100/80 hover:bg-purple-200/60 transition-colors duration-200 p-1.5 rounded-lg group-hover/item:scale-110 transform transition-transform duration-200">
+                    {/* 微信小程序最近服务 - 简洁交互 */}
+                    <div className="flex items-center gap-3 group/item hover:bg-white/70 rounded-xl p-2 -m-2 transition-all duration-150">
+                      <div className="bg-purple-100/70 hover:bg-purple-200/60 transition-colors duration-150 p-1.5 rounded-lg group-hover/item:scale-105 transform transition-transform duration-150">
                         <Clock className={cn(
                           "text-purple-600",
                           deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
@@ -1428,18 +1944,19 @@ export function PatientList() {
                     </div>
                   </div>
 
-                {/* 家庭成员预览 */}
+                {/* 微信小程序成员列表 */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className={cn(
-                      "text-gray-800 font-bold flex items-center gap-2",
+                      "text-gray-800 font-semibold flex items-center gap-2",
                       deviceType === "mobile" ? "text-sm" : "text-xs"
                     )}>
                       <User className="h-4 w-4 text-indigo-600" />
                       家庭成员
                     </h4>
                     <Badge variant="secondary" className={cn(
-                      "bg-indigo-100/80 text-indigo-700 border-indigo-200/50 rounded-full",
+                      // 微信小程序计数器风格
+                      "bg-indigo-100/70 text-indigo-700 border-indigo-200/40 rounded-full",
                       deviceType === "mobile" ? "text-xs px-2 py-0.5" : "text-[10px] px-1.5 py-0.5"
                     )}>
                       {family.totalMembers}人
@@ -1448,13 +1965,13 @@ export function PatientList() {
                   <div className="space-y-2">
                     {family.members.slice(0, 3).map((member, index) => (
                       <div key={member.id} className={cn(
-                        "flex items-center gap-3 bg-gradient-to-r from-blue-50/60 to-indigo-50/40",
-                        "rounded-xl border border-blue-100/60 transition-all duration-200",
-                        "hover:from-blue-50/90 hover:to-indigo-50/70 hover:border-blue-200/80 hover:shadow-md",
-                        "group/member cursor-pointer active:scale-98 transform",
+                        // 微信小程序成员卡片
+                        "flex items-center gap-3 bg-gray-50/80 rounded-xl border border-gray-100/80 transition-all duration-150",
+                        "hover:bg-gray-50 hover:border-gray-200/90 hover:shadow-sm",
+                        "group/member cursor-pointer active:scale-[0.99] transform",
                         deviceType === "mobile" ? "p-3" : "p-2.5"
                       )}>
-                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-1.5 rounded-lg group-hover/member:scale-110 transition-transform duration-200">
+                        <div className="bg-blue-500 p-1.5 rounded-lg group-hover/member:scale-105 transition-transform duration-150">
                           <User className={cn(
                             "text-white",
                             deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
@@ -1467,7 +1984,8 @@ export function PatientList() {
                               deviceType === "mobile" ? "text-sm" : "text-xs"
                             )}>{member.name}</span>
                             <Badge variant="outline" className={cn(
-                              "bg-blue-50/80 text-blue-700 border-blue-200/50 rounded-full px-1.5 py-0",
+                              // 微信小程序关系标签
+                              "bg-blue-50/60 text-blue-700 border-blue-200/40 rounded-full px-1.5 py-0",
                               deviceType === "mobile" ? "text-[10px]" : "text-[9px]"
                             )}>
                               {member.relationship}
@@ -1482,8 +2000,8 @@ export function PatientList() {
                     ))}
                     {family.members.length > 3 && (
                       <div className={cn(
-                        "flex items-center justify-center bg-gradient-to-r from-indigo-100/80 to-purple-100/60",
-                        "text-indigo-700 rounded-xl border border-indigo-200/50 font-semibold",
+                        // 微信小程序更多指示器
+                        "flex items-center justify-center bg-gray-100/70 text-gray-700 rounded-xl border border-gray-200/40 font-medium",
                         deviceType === "mobile" ? "px-3 py-2 text-sm" : "px-2 py-1.5 text-xs"
                       )}>
                         +{family.members.length - 3}更多
@@ -1492,19 +2010,19 @@ export function PatientList() {
                   </div>
                 </div>
 
-                {/* 快捷操作按钮 - 提升视觉效果和交互性 */}
-                <div className="mt-4 pt-4 border-t border-gray-100/80">
-                  <div className="grid grid-cols-3 gap-3">
+                {/* 微信小程序快捷操作 - 简洁的三按钮布局 */}
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       className={cn(
-                        "bg-blue-50/70 hover:bg-blue-100/90 border-blue-200/70 hover:border-blue-300/80",
-                        "text-blue-700 rounded-xl transition-all duration-200",
-                        "active:scale-95 hover:shadow-lg backdrop-blur-sm flex-col gap-1.5",
-                        "group/button border-2 hover:scale-105 transform",
-                        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30",
-                        deviceType === "mobile" ? "h-auto py-3 text-xs min-h-[48px]" : "h-auto py-2.5 text-[10px] min-h-[44px]"
+                        // 微信小程序按钮风格 - 纯净简洁
+                        "bg-blue-50/60 hover:bg-blue-50 border-blue-200/60 hover:border-blue-300/80",
+                        "text-blue-700 rounded-xl transition-all duration-150",
+                        "active:scale-95 hover:shadow-sm flex-col gap-1",
+                        "group/button border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50",
+                        deviceType === "mobile" ? "h-auto py-2.5 text-xs min-h-[44px]" : "h-auto py-2 text-[10px] min-h-[40px]"
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -1513,7 +2031,7 @@ export function PatientList() {
                       aria-label={`为 ${family.householdHead}家预约服务`}
                     >
                       <Calendar className={cn(
-                        "group-hover/button:scale-110 transition-transform duration-200",
+                        "group-hover/button:scale-105 transition-transform duration-150",
                         deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
                       )} />
                       预约
@@ -1522,12 +2040,12 @@ export function PatientList() {
                       size="sm"
                       variant="outline"
                       className={cn(
-                        "bg-green-50/70 hover:bg-green-100/90 border-green-200/70 hover:border-green-300/80",
-                        "text-green-700 rounded-xl transition-all duration-200",
-                        "active:scale-95 hover:shadow-lg backdrop-blur-sm flex-col gap-1.5",
-                        "group/button border-2 hover:scale-105 transform",
-                        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/30",
-                        deviceType === "mobile" ? "h-auto py-3 text-xs min-h-[48px]" : "h-auto py-2.5 text-[10px] min-h-[44px]"
+                        // 微信小程序按钮风格 - 纯净简洁
+                        "bg-green-50/60 hover:bg-green-50 border-green-200/60 hover:border-green-300/80",
+                        "text-green-700 rounded-xl transition-all duration-150",
+                        "active:scale-95 hover:shadow-sm flex-col gap-1",
+                        "group/button border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400/50",
+                        deviceType === "mobile" ? "h-auto py-2.5 text-xs min-h-[44px]" : "h-auto py-2 text-[10px] min-h-[40px]"
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -1536,7 +2054,7 @@ export function PatientList() {
                       aria-label={`联系 ${family.householdHead}家`}
                     >
                       <MessageCircle className={cn(
-                        "group-hover/button:scale-110 transition-transform duration-200",
+                        "group-hover/button:scale-105 transition-transform duration-150",
                         deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
                       )} />
                       联系
@@ -1545,12 +2063,12 @@ export function PatientList() {
                       size="sm"
                       variant="outline"
                       className={cn(
-                        "bg-purple-50/70 hover:bg-purple-100/90 border-purple-200/70 hover:border-purple-300/80",
-                        "text-purple-700 rounded-xl transition-all duration-200",
-                        "active:scale-95 hover:shadow-lg backdrop-blur-sm flex-col gap-1.5",
-                        "group/button border-2 hover:scale-105 transform",
-                        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-500/30",
-                        deviceType === "mobile" ? "h-auto py-3 text-xs min-h-[48px]" : "h-auto py-2.5 text-[10px] min-h-[44px]"
+                        // 微信小程序按钮风格 - 纯净简洁
+                        "bg-purple-50/60 hover:bg-purple-50 border-purple-200/60 hover:border-purple-300/80",
+                        "text-purple-700 rounded-xl transition-all duration-150",
+                        "active:scale-95 hover:shadow-sm flex-col gap-1",
+                        "group/button border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/50",
+                        deviceType === "mobile" ? "h-auto py-2.5 text-xs min-h-[44px]" : "h-auto py-2 text-[10px] min-h-[40px]"
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -1559,7 +2077,7 @@ export function PatientList() {
                       aria-label={`为 ${family.householdHead}家添加健康记录`}
                     >
                       <FileText className={cn(
-                        "group-hover/button:scale-110 transition-transform duration-200",
+                        "group-hover/button:scale-105 transition-transform duration-150",
                         deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
                       )} />
                       记录
@@ -1596,11 +2114,12 @@ export function PatientList() {
           <Button
             onClick={() => setShowNewFamilyModal(true)}
             className={cn(
+              // 微信小程序主按钮风格
               "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
-              "text-white border-0 rounded-2xl shadow-lg",
-              "active:scale-95 transition-all duration-200 hover:shadow-xl",
-              "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30",
-              deviceType === "mobile" ? "px-6 py-3 text-sm gap-2 min-h-[48px]" : "px-4 py-2 text-xs gap-1.5 min-h-[44px]"
+              "text-white border-0 rounded-2xl shadow-md",
+              "active:scale-95 transition-all duration-150 hover:shadow-lg",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50",
+              deviceType === "mobile" ? "px-6 py-3 text-sm gap-2 min-h-[44px]" : "px-4 py-2 text-xs gap-1.5 min-h-[40px]"
             )}
             aria-label="创建首个家庭档案"
           >
@@ -1613,9 +2132,10 @@ export function PatientList() {
       )}
 
       {showNewFamilyModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-3">
           <div className={cn(
-            "bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20",
+            // 微信小程序模态框风格
+            "bg-white rounded-3xl shadow-xl border border-gray-100",
             "w-full max-h-[90vh] overflow-hidden",
             deviceType === "mobile" 
               ? "max-w-[95vw]" 
@@ -1623,14 +2143,14 @@ export function PatientList() {
               ? "max-w-2xl" 
               : "max-w-3xl"
           )}>
-            {/* 微信小程序风格的标题栏 */}
+            {/* 微信小程序模态框标题栏 */}
             <div className={cn(
-              "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-b border-blue-100/50",
+              "bg-gray-50/60 border-b border-gray-100",
               "flex items-center justify-between",
               deviceType === "mobile" ? "px-4 py-4" : deviceType === "tablet" ? "px-5 py-4" : "px-6 py-5"
             )}>
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 bg-blue-500/20 rounded-2xl">
+                <div className="flex items-center justify-center w-8 h-8 bg-blue-500/10 rounded-2xl">
                   <UserPlus className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
@@ -1648,8 +2168,8 @@ export function PatientList() {
                 variant="ghost" 
                 onClick={() => setShowNewFamilyModal(false)}
                 className={cn(
-                  "rounded-full hover:bg-white/80 active:scale-95 transition-all duration-200",
-                  "bg-white/60 backdrop-blur-md shadow-md border border-white/20",
+                  "rounded-full hover:bg-gray-100 active:scale-95 transition-all duration-150",
+                  "bg-gray-50 shadow-sm border border-gray-200",
                   deviceType === "mobile" ? "h-8 w-8" : "h-9 w-9"
                 )}
               >
@@ -1669,9 +2189,9 @@ export function PatientList() {
                 "space-y-6",
                 deviceType === "mobile" ? "p-4" : deviceType === "tablet" ? "p-5" : "p-6"
               )}>
-                {/* 基本信息卡片 */}
+                {/* 微信小程序基本信息卡片 */}
                 <div className={cn(
-                  "bg-white/80 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg",
+                  "bg-gray-50/60 rounded-2xl border border-gray-100",
                   deviceType === "mobile" ? "p-4" : "p-5"
                 )}>
                   <div className="flex items-center gap-2 mb-4">
@@ -1698,8 +2218,8 @@ export function PatientList() {
                         onChange={(e) => setNewFamily((prev) => ({ ...prev, householdHead: e.target.value }))}
                         placeholder="请输入户主姓名"
                         className={cn(
-                          "border-gray-200 bg-white/80 rounded-xl focus:bg-white transition-all duration-200",
-                          "focus:border-blue-300 focus:ring-4 focus:ring-blue-100/50",
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                           deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
                         )}
                       />
@@ -1714,8 +2234,8 @@ export function PatientList() {
                         onChange={(e) => setNewFamily((prev) => ({ ...prev, phone: e.target.value }))}
                         placeholder="请输入联系电话"
                         className={cn(
-                          "border-gray-200 bg-white/80 rounded-xl focus:bg-white transition-all duration-200",
-                          "focus:border-blue-300 focus:ring-4 focus:ring-blue-100/50",
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                           deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
                         )}
                       />
@@ -1732,17 +2252,17 @@ export function PatientList() {
                       onChange={(e) => setNewFamily((prev) => ({ ...prev, address: e.target.value }))}
                       placeholder="请输入家庭地址"
                       className={cn(
-                        "border-gray-200 bg-white/80 rounded-xl focus:bg-white transition-all duration-200",
-                        "focus:border-blue-300 focus:ring-4 focus:ring-blue-100/50",
+                        "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                        "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                         deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
                       )}
                     />
                   </div>
                 </div>
 
-                {/* 家庭成员卡片 */}
+                {/* 微信小程序家庭成员卡片 */}
                 <div className={cn(
-                  "bg-white/80 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg",
+                  "bg-gray-50/60 rounded-2xl border border-gray-100",
                   deviceType === "mobile" ? "p-4" : "p-5"
                 )}>
                   <div className="flex items-center justify-between mb-4">
@@ -1759,8 +2279,8 @@ export function PatientList() {
                       variant="outline" 
                       onClick={addFamilyMember}
                       className={cn(
-                        "bg-blue-50/80 hover:bg-blue-100/80 border-blue-200/80 text-blue-700",
-                        "rounded-xl shadow-sm active:scale-95 transition-all duration-200",
+                        "bg-blue-50/60 hover:bg-blue-100/60 border-blue-200/60 text-blue-700",
+                        "rounded-xl shadow-sm active:scale-95 transition-all duration-150",
                         deviceType === "mobile" ? "h-8 px-3 text-xs gap-1" : "h-9 px-4 text-sm gap-2"
                       )}
                     >
@@ -1774,7 +2294,8 @@ export function PatientList() {
                   <div className="space-y-4">
                     {newFamily.members.map((member, index) => (
                       <div key={index} className={cn(
-                        "bg-gradient-to-r from-gray-50/80 to-gray-100/50 rounded-2xl border border-gray-200/50",
+                        // 微信小程序成员项卡片
+                        "bg-white/80 rounded-2xl border border-gray-200/60",
                         deviceType === "mobile" ? "p-3" : "p-4"
                       )}>
                         <div className="flex items-center justify-between mb-3">
@@ -1792,7 +2313,7 @@ export function PatientList() {
                               variant="ghost" 
                               onClick={() => removeFamilyMember(index)}
                               className={cn(
-                                "rounded-full hover:bg-red-50 text-red-500 active:scale-95 transition-all duration-200",
+                                "rounded-full hover:bg-red-50 text-red-500 active:scale-95 transition-all duration-150",
                                 deviceType === "mobile" ? "h-6 w-6" : "h-7 w-7"
                               )}
                             >
@@ -1817,8 +2338,8 @@ export function PatientList() {
                               onChange={(e) => updateFamilyMember(index, "name", e.target.value)}
                               placeholder="姓名"
                               className={cn(
-                                "border-gray-200 bg-white/80 rounded-lg focus:bg-white transition-all duration-200",
-                                "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
+                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                                 deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
                               )}
                             />
@@ -1834,8 +2355,8 @@ export function PatientList() {
                               placeholder="年龄"
                               type="number"
                               className={cn(
-                                "border-gray-200 bg-white/80 rounded-lg focus:bg-white transition-all duration-200",
-                                "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
+                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                                 deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
                               )}
                             />
@@ -1851,8 +2372,8 @@ export function PatientList() {
                               onValueChange={(value) => updateFamilyMember(index, "gender", value)}
                             >
                               <SelectTrigger className={cn(
-                                "w-full border-gray-200 bg-white/80 rounded-lg focus:bg-white",
-                                "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                                "w-full border-gray-200 bg-white rounded-lg focus:bg-white",
+                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                                 deviceType === "mobile" ? "h-8 text-xs px-2" : "h-9 text-sm px-3"
                               )}>
                                 <SelectValue placeholder="选择性别" />
@@ -1879,8 +2400,8 @@ export function PatientList() {
                               onChange={(e) => updateFamilyMember(index, "relationship", e.target.value)}
                               placeholder="与户主关系"
                               className={cn(
-                                "border-gray-200 bg-white/80 rounded-lg focus:bg-white transition-all duration-200",
-                                "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
+                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                                 deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
                               )}
                             />
@@ -1896,8 +2417,8 @@ export function PatientList() {
                               onValueChange={(value) => updateFamilyMember(index, "packageType", value)}
                             >
                               <SelectTrigger className={cn(
-                                "w-full border-gray-200 bg-white/80 rounded-lg focus:bg-white",
-                                "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                                "w-full border-gray-200 bg-white rounded-lg focus:bg-white",
+                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                                 deviceType === "mobile" ? "h-8 text-xs px-2" : "h-9 text-sm px-3"
                               )}>
                                 <SelectValue placeholder="选择套餐" />
@@ -1921,8 +2442,8 @@ export function PatientList() {
                             onChange={(e) => updateFamilyMember(index, "conditions", e.target.value)}
                             placeholder="请输入健康状况或疾病史（如：高血压、糖尿病等）"
                             className={cn(
-                              "border-gray-200 bg-white/80 rounded-lg focus:bg-white transition-all duration-200",
-                              "focus:border-blue-300 focus:ring-2 focus:ring-blue-100/50",
+                              "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
+                              "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
                               deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
                             )}
                           />
@@ -1934,9 +2455,9 @@ export function PatientList() {
               </div>
             </div>
 
-            {/* 微信小程序风格的底部操作栏 */}
+            {/* 微信小程序底部操作栏 */}
             <div className={cn(
-              "bg-white/95 backdrop-blur-xl border-t border-gray-100/50",
+              "bg-white border-t border-gray-100",
               "flex gap-3",
               deviceType === "mobile" ? "p-4" : deviceType === "tablet" ? "p-5" : "p-6"
             )}>
@@ -1944,8 +2465,8 @@ export function PatientList() {
                 variant="outline" 
                 onClick={() => setShowNewFamilyModal(false)} 
                 className={cn(
-                  "flex-1 bg-gray-50/80 hover:bg-gray-100/80 border-gray-200/80 text-gray-700",
-                  "rounded-2xl shadow-sm active:scale-95 transition-all duration-200",
+                  "flex-1 bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700",
+                  "rounded-2xl shadow-sm active:scale-95 transition-all duration-150",
                   deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-base"
                 )}
               >
@@ -1955,8 +2476,8 @@ export function PatientList() {
                 onClick={handleSubmitNewFamily} 
                 className={cn(
                   "flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
-                  "text-white border-0 rounded-2xl shadow-lg active:scale-95 transition-all duration-200",
-                  "hover:shadow-xl focus:ring-4 focus:ring-blue-200/50",
+                  "text-white border-0 rounded-2xl shadow-md active:scale-95 transition-all duration-150",
+                  "hover:shadow-lg focus:ring-2 focus:ring-blue-400/50",
                   deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-base"
                 )}
               >
