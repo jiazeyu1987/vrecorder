@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Phone, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, Heart, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth-provider"
 
@@ -34,10 +34,21 @@ export default function LoginPage() {
   // 在认证状态加载中时，显示加载界面
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center space-y-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">检查登录状态...</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-6">
+          {/* Logo with loading animation */}
+          <div className="relative mx-auto">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+              <Heart className="h-10 w-10 text-white" fill="currentColor" />
+            </div>
+            {/* Loading ring */}
+            <div className="absolute inset-0 w-20 h-20 border-4 border-green-200 border-t-green-500 rounded-3xl animate-spin"></div>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-lg font-medium text-gray-700">健康小助手</h2>
+            <p className="text-gray-500 text-sm">正在检查登录状态...</p>
+          </div>
         </div>
       </div>
     )
@@ -77,50 +88,76 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Phone className="h-8 w-8 text-primary-foreground" />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/* 背景装饰 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-green-100 rounded-full opacity-30 blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-blue-100 rounded-full opacity-20 blur-3xl"></div>
+      </div>
+      
+      <div className="relative w-full max-w-sm sm:max-w-md space-y-6 sm:space-y-8">
+        {/* 头部logo和标题 */}
+        <div className="text-center space-y-4">
+          <div className="relative mx-auto">
+            {/* 主logo */}
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-green-200">
+              <Heart className="h-10 w-10 sm:h-12 sm:w-12 text-white" fill="currentColor" />
+            </div>
+            {/* 装饰圆点 */}
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-3 w-3 text-white" />
+            </div>
           </div>
-          <h1 className="text-2xl font-semibold">居家医疗记录员</h1>
-          <p className="text-muted-foreground">请登录您的账户</p>
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              健康小助手
+            </h1>
+            <p className="text-gray-500 text-sm sm:text-base">医疗记录 · 贴心管理</p>
+          </div>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-center">登录</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">手机号</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="请输入手机号"
-                  value={formData.phone}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                  required
-                />
+        {/* 登录卡片 */}
+        <Card className="border-0 shadow-xl shadow-gray-200/50 bg-white/80 backdrop-blur-sm rounded-3xl overflow-hidden">
+          <CardContent className="p-6 sm:p-8">
+            <form onSubmit={handleLogin} className="space-y-5">
+              {/* 手机号输入 */}
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-gray-700 font-medium text-sm">
+                  手机号码
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="请输入11位手机号码"
+                    value={formData.phone}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    className="h-12 rounded-2xl border-2 border-gray-100 focus:border-green-400 focus:ring-0 pl-4 pr-4 text-base placeholder:text-gray-400 bg-gray-50/50 transition-all duration-200"
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">密码</Label>
+              {/* 密码输入 */}
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-gray-700 font-medium text-sm">
+                  登录密码
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="请输入密码"
+                    placeholder="请输入您的密码"
                     value={formData.password}
                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                    className="h-12 rounded-2xl border-2 border-gray-100 focus:border-green-400 focus:ring-0 pl-4 pr-12 text-base placeholder:text-gray-400 bg-gray-50/50 transition-all duration-200"
                     required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -128,38 +165,83 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
-                  记住我，7天内自动登录
-                </Label>
+              {/* 记住我选项 */}
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    className="rounded-md data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                  />
+                  <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
+                    7天内自动登录
+                  </Label>
+                </div>
+                <button 
+                  type="button" 
+                  className="text-sm text-green-600 hover:text-green-700 transition-colors"
+                >
+                  忘记密码?
+                </button>
               </div>
 
+              {/* 错误提示 */}
               {error && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
+                <div className="flex items-center gap-3 text-sm text-red-600 bg-red-50 border border-red-100 p-4 rounded-2xl">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "登录中..." : "登录"}
+              {/* 登录按钮 */}
+              <Button 
+                type="submit" 
+                className="w-full h-12 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium text-base shadow-lg shadow-green-200 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>登录中...</span>
+                  </div>
+                ) : (
+                  "立即登录"
+                )}
               </Button>
             </form>
 
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              <p>测试账号: 13800001234</p>
-              <p>测试密码: 123456</p>
+            {/* 测试账号信息 */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl border border-blue-100">
+              <div className="text-center space-y-1">
+                <p className="text-xs text-gray-500 mb-2">📱 体验账号</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">手机号:</span>
+                    <span className="font-medium text-gray-800 font-mono">13800001234</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">密码:</span>
+                    <span className="font-medium text-gray-800 font-mono">123456</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="text-center text-xs text-muted-foreground">
-          <p>登录即表示您同意我们的服务条款和隐私政策</p>
+        {/* 底部条款 */}
+        <div className="text-center px-4">
+          <p className="text-xs text-gray-400 leading-relaxed">
+            登录即表示您同意我们的
+            <button className="text-green-600 hover:text-green-700 mx-1 underline">
+              服务条款
+            </button>
+            和
+            <button className="text-green-600 hover:text-green-700 mx-1 underline">
+              隐私政策
+            </button>
+          </p>
         </div>
       </div>
     </div>
