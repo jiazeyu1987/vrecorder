@@ -1864,14 +1864,16 @@ export function PatientList() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className={cn(
-                      getPaymentStatusColor(family.members[0].paymentStatus),
-                      // 微信小程序状态标签风格
-                      "rounded-full font-medium border-0 shadow-sm",
-                      deviceType === "mobile" ? "text-xs px-2.5 py-1" : "text-[10px] px-2 py-0.5"
-                    )}>
-                      {getPaymentStatusText(family.members[0].paymentStatus)}
-                    </Badge>
+                    {family.members && family.members.length > 0 && (
+                      <Badge variant="outline" className={cn(
+                        getPaymentStatusColor(family.members[0].paymentStatus),
+                        // 微信小程序状态标签风格
+                        "rounded-full font-medium border-0 shadow-sm",
+                        deviceType === "mobile" ? "text-xs px-2.5 py-1" : "text-[10px] px-2 py-0.5"
+                      )}>
+                        {getPaymentStatusText(family.members[0].paymentStatus)}
+                      </Badge>
+                    )}
                     <div className={cn(
                       // 微信小程序箭头指示器
                       "bg-gray-100/80 rounded-full group-hover:bg-blue-100/80 transition-colors duration-200",

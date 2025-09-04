@@ -96,9 +96,9 @@ export const usePatientData = (): UsePatientDataResult => {
 
   // 获取家庭列表
   const fetchFamilies = useCallback(async (
-    page: number = searchParams.page,
-    limit: number = searchParams.limit,
-    search: string = searchParams.search
+    page: number = 1,
+    limit: number = 20,
+    search: string = ''
   ) => {
     setLoading(true)
     setError(null)
@@ -118,7 +118,7 @@ export const usePatientData = (): UsePatientDataResult => {
     } finally {
       setLoading(false)
     }
-  }, [searchParams, handleError])
+  }, [handleError]) // 移除searchParams依赖
 
   // 获取家庭详情
   const fetchFamilyDetail = useCallback(async (familyId: string) => {
@@ -364,7 +364,7 @@ export const usePatientData = (): UsePatientDataResult => {
 
   // 初始化时获取数据
   useEffect(() => {
-    fetchFamilies()
+    fetchFamilies(1, 20, '')
   }, [fetchFamilies])
 
   return {

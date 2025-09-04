@@ -10,15 +10,34 @@ import { SessionManager } from './session-manager'
 // 请求头配置
 const getHeaders = () => {
   const token = SessionManager.getAccessToken()
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` })
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
   }
+  
+  // 只有当token存在且不是undefined/null时才添加Authorization头
+  if (token && token !== 'undefined' && token !== 'null') {
+    headers.Authorization = `Bearer ${token}`
+  }
+  
+  return headers
 }
 
 // 通用请求方法
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint}`
+  
+  // 检查是否有有效的token（对于需要认证的端点）
+  const token = SessionManager.getAccessToken()
+  const needsAuth = !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')
+  
+  if (needsAuth && (!token || token === 'undefined' || token === 'null')) {
+    // 没有有效token，清理会话并重定向到登录页
+    SessionManager.clearSession()
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+    throw new Error('请先登录')
+  }
   
   const response = await fetch(url, {
     ...options,
@@ -29,6 +48,15 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   })
   
   if (!response.ok) {
+    // 如果返回401或422（未授权），清理会话并重定向
+    if (response.status === 401 || response.status === 422) {
+      SessionManager.clearSession()
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
+      throw new Error('登录已过期，请重新登录')
+    }
+    
     const error = await response.json()
     throw new Error(error.message || `HTTP ${response.status}`)
   }

@@ -84,7 +84,12 @@ export default function LoginPage() {
         }
         
         // 使用AuthProvider的login方法，并传递记住我选项
-        login(userData, result.tokens, rememberMe)
+        // 注意：需要转换属性名from access_token/refresh_token to accessToken/refreshToken
+        const tokens = {
+          accessToken: result.tokens.access_token,
+          refreshToken: result.tokens.refresh_token
+        }
+        login(userData, tokens, rememberMe)
         router.push("/")
       } else {
         setError(result.error || "登录失败")
