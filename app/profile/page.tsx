@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAuth } from "@/components/auth-provider"
+import { ProtectedRoute } from "@/components/protected-route"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -106,7 +107,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50/30">
       <main className={`pb-24 space-y-3 ${isMobile ? 'px-4' : 'px-6 max-w-2xl mx-auto'}`}>
         <Card className="shadow-none border-0 bg-white/70 backdrop-blur-sm rounded-2xl mt-4">
           <CardContent className="p-6">
@@ -880,6 +882,6 @@ export default function ProfilePage() {
         </Dialog>
       </main>
       <BottomNavigation activeTab="profile" />
-    </div>
+    </ProtectedRoute>
   )
 }

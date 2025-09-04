@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { WechatPatientHeader } from "@/components/wechat-patient-header"
+import { usePatientData } from "@/hooks/use-patient-data"
+import { toast } from "sonner"
+import type { CreateFamilyRequest, CreateMemberRequest } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   Users,
@@ -129,92 +132,27 @@ const mockHealthRecords: HealthRecord[] = [
   },
 ]
 
-const mockFamilies: Family[] = [
-  {
-    id: "1",
-    householdHead: "张伟",
-    address: "朝阳区幸福小区3号楼502",
-    phone: "138****1234",
-    members: [
-      {
-        id: "1-1",
-        name: "张伟",
-        age: 65,
-        gender: "男",
-        relationship: "户主",
-        conditions: ["高血压"],
-        lastService: "2024-03-10",
-        packageType: "标准套餐",
-        paymentStatus: "normal",
-        medications: ["降压药"],
-        records: [mockHealthRecords[0]],
-      },
-      {
-        id: "1-2",
-        name: "李梅",
-        age: 62,
-        gender: "女",
-        relationship: "配偶",
-        conditions: ["糖尿病"],
-        lastService: "2024-03-12",
-        packageType: "VIP套餐",
-        paymentStatus: "normal",
-        medications: ["胰岛素"],
-        records: [mockHealthRecords[1]],
-      },
-    ],
-    totalMembers: 2,
-    lastService: "2024-03-12",
-  },
-  {
-    id: "2",
-    householdHead: "王小明",
-    address: "朝阳区阳光花园1号楼301",
-    phone: "139****5678",
-    members: [
-      {
-        id: "2-1",
-        name: "王小明",
-        age: 35,
-        gender: "男",
-        relationship: "户主",
-        conditions: ["健康体检"],
-        lastService: "2024-03-05",
-        packageType: "基础套餐",
-        paymentStatus: "overdue",
-      },
-    ],
-    totalMembers: 1,
-    lastService: "2024-03-05",
-  },
-  {
-    id: "3",
-    householdHead: "陈奶奶",
-    address: "海淀区康乐小区5号楼201",
-    phone: "136****9012",
-    members: [
-      {
-        id: "3-1",
-        name: "陈秀英",
-        age: 78,
-        gender: "女",
-        relationship: "户主",
-        conditions: ["高血压", "糖尿病"],
-        lastService: "2024-03-14",
-        packageType: "VIP套餐",
-        paymentStatus: "normal",
-        medications: ["降压药", "降糖药"],
-      },
-    ],
-    totalMembers: 1,
-    lastService: "2024-03-14",
-  },
-]
-
 export function PatientList() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
-  const [selectedPatient, setSelectedPatient] = useState<FamilyMember | null>(null)
+  const {
+    families,
+    selectedFamily,
+    selectedPatient,
+    loading,
+    error,
+    fetchFamilies,
+    fetchFamilyDetail,
+    createNewFamily,
+    updateFamilyInfo,
+    removeFamilyById,
+    addMemberToFamily,
+    updateMemberInfo,
+    removeMemberFromFamily,
+    setSelectedFamily,
+    setSelectedPatient,
+    clearError,
+    refreshData,
+  } = usePatientData()
   const [selectedRecord, setSelectedRecord] = useState<HealthRecord | null>(null)
   const [showNewFamilyModal, setShowNewFamilyModal] = useState(false)
   const [showNewRecordModal, setShowNewRecordModal] = useState(false)
@@ -224,14 +162,14 @@ export function PatientList() {
   const [showFilterOptions, setShowFilterOptions] = useState(false)
   const deviceType = useDeviceType()
   const isMobile = useIsMobile()
-  const [newFamily, setNewFamily] = useState({
+  const [newFamily, setNewFamily] = useState<CreateFamilyRequest>({
     householdHead: "",
     address: "",
     phone: "",
     members: [
       {
         name: "",
-        age: "",
+        age: 0,
         gender: "",
         relationship: "户主",
         conditions: "",
@@ -277,16 +215,41 @@ export function PatientList() {
     }
   }
 
-  const updateFamilyMember = (index: number, field: string, value: string) => {
+  const updateFamilyMember = (index: number, field: string, value: string | number) => {
     setNewFamily((prev) => ({
       ...prev,
-      members: prev.members.map((member, i) => (i === index ? { ...member, [field]: value } : member)),
+      members: prev.members.map((member, i) => 
+        i === index ? { ...member, [field]: field === 'age' ? Number(value) || 0 : value } : member
+      ),
     }))
   }
 
-  const handleSubmitNewFamily = () => {
-    console.log("[v0] Submitting new family:", newFamily)
-    setShowNewFamilyModal(false)
+  const handleSubmitNewFamily = async () => {
+    try {
+      // 验证表单数据
+      if (!newFamily.householdHead || !newFamily.address || !newFamily.phone) {
+        toast.error('请填写完整的家庭基本信息')
+        return
+      }
+
+      for (const member of newFamily.members) {
+        if (!member.name || !member.age || !member.gender || !member.relationship) {
+          toast.error('请填写完整的家庭成员信息')
+          return
+        }
+      }
+
+      await createNewFamily(newFamily)
+      toast.success('家庭档案创建成功！')
+      setShowNewFamilyModal(false)
+      resetNewFamilyForm()
+    } catch (error) {
+      console.error('创建家庭档案失败:', error)
+      toast.error(error instanceof Error ? error.message : '创建失败，请重试')
+    }
+  }
+
+  const resetNewFamilyForm = () => {
     setNewFamily({
       householdHead: "",
       address: "",
@@ -294,7 +257,7 @@ export function PatientList() {
       members: [
         {
           name: "",
-          age: "",
+          age: 0,
           gender: "",
           relationship: "户主",
           conditions: "",
@@ -356,13 +319,31 @@ export function PatientList() {
     }
   }
 
-  const handleEditPatient = () => {
-    if (editingPatient && selectedPatient) {
-      // Save changes
-      console.log("[v0] Saving patient changes:", editedPatientData)
-      // Here you would typically update the patient data in your backend
-      setEditingPatient(false)
-      setEditedPatientData({})
+  const handleEditPatient = async () => {
+    if (editingPatient && selectedPatient && selectedFamily) {
+      try {
+        // 构造更新数据
+        const updateData: Partial<CreateMemberRequest> = {
+          name: editedPatientData.name,
+          age: editedPatientData.age,
+          gender: editedPatientData.gender,
+          packageType: editedPatientData.packageType,
+          conditions: Array.isArray(editedPatientData.conditions) 
+            ? editedPatientData.conditions.join(', ')
+            : editedPatientData.conditions || '',
+          medications: Array.isArray(editedPatientData.medications)
+            ? editedPatientData.medications.join(', ')
+            : editedPatientData.medications || '',
+        }
+
+        await updateMemberInfo(selectedFamily.id, selectedPatient.id, updateData)
+        toast.success('患者信息更新成功！')
+        setEditingPatient(false)
+        setEditedPatientData({})
+      } catch (error) {
+        console.error('更新患者信息失败:', error)
+        toast.error(error instanceof Error ? error.message : '更新失败，请重试')
+      }
     } else {
       // Start editing
       setEditingPatient(true)
@@ -437,13 +418,34 @@ export function PatientList() {
     }))
   }
 
-  // 过滤搜索逻辑
-  const filteredFamilies = mockFamilies.filter(
+  // 过滤搜索逻辑（现在在服务器端处理）
+  const filteredFamilies = families.filter(
     (family) =>
       family.householdHead.toLowerCase().includes(searchTerm.toLowerCase()) ||
       family.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       family.members.some((member) => member.name.toLowerCase().includes(searchTerm.toLowerCase()))
   )
+
+  // 监听搜索词变化，调用API搜索
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        fetchFamilies(1, 20, searchTerm)
+      } else {
+        fetchFamilies(1, 20, '')
+      }
+    }, 500) // 防抖处理
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, fetchFamilies])
+
+  // 错误提示
+  useEffect(() => {
+    if (error) {
+      toast.error(error)
+      clearError()
+    }
+  }, [error, clearError])
 
   if (selectedRecord) {
     return (
@@ -1774,16 +1776,26 @@ export function PatientList() {
         onAddFamily={() => setShowNewFamilyModal(true)}
         onFilter={() => setShowFilterOptions(!showFilterOptions)}
         showFilter={showFilterOptions}
-        totalPatients={mockFamilies.reduce((sum, family) => sum + family.totalMembers, 0)}
-        totalFamilies={mockFamilies.length}
+        totalPatients={families.reduce((sum, family) => sum + family.totalMembers, 0)}
+        totalFamilies={families.length}
       />
+
+      {/* 加载状态 */}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
+            <span className="text-gray-600 text-sm">正在加载患者数据...</span>
+          </div>
+        </div>
+      )}
 
       {/* 微信小程序风格的家庭列表 */}
       <div className={cn(
         "space-y-4",
         deviceType === "mobile" ? "px-3 mt-4" : deviceType === "tablet" ? "px-4 mt-5" : "px-6 mt-6"
       )}>
-        {filteredFamilies.map((family) => (
+        {!loading && filteredFamilies.map((family) => (
           <Card
             key={family.id}
             className={cn(
@@ -2092,7 +2104,7 @@ export function PatientList() {
       </div>
 
       {/* 无数据时的占位符 */}
-      {filteredFamilies.length === 0 && (
+      {!loading && filteredFamilies.length === 0 && (
         <div className="text-center py-12">
           <div className={cn(
             "mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center",
@@ -2106,28 +2118,34 @@ export function PatientList() {
           <h3 className={cn(
             "font-medium text-gray-600 mb-2",
             deviceType === "mobile" ? "text-base" : "text-sm"
-          )}>暂无患者数据</h3>
+          )}>
+            {searchTerm ? '未找到相关患者' : '暂无患者数据'}
+          </h3>
           <p className={cn(
             "text-gray-500 mb-4",
             deviceType === "mobile" ? "text-sm" : "text-xs"
-          )}>请点击上方“新家庭”按钮添加患者信息</p>
-          <Button
-            onClick={() => setShowNewFamilyModal(true)}
-            className={cn(
-              // 微信小程序主按钮风格
-              "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
-              "text-white border-0 rounded-2xl shadow-md",
-              "active:scale-95 transition-all duration-150 hover:shadow-lg",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50",
-              deviceType === "mobile" ? "px-6 py-3 text-sm gap-2 min-h-[44px]" : "px-4 py-2 text-xs gap-1.5 min-h-[40px]"
-            )}
-            aria-label="创建首个家庭档案"
-          >
-            <UserPlus className={cn(
-              deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
-            )} />
-            创建首个家庭档案
-          </Button>
+          )}>
+            {searchTerm ? '请尝试其他搜索词' : '请点击上方"新家庭"按钮添加患者信息'}
+          </p>
+          {!searchTerm && (
+            <Button
+              onClick={() => setShowNewFamilyModal(true)}
+              className={cn(
+                // 微信小程序主按钮风格
+                "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
+                "text-white border-0 rounded-2xl shadow-md",
+                "active:scale-95 transition-all duration-150 hover:shadow-lg",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50",
+                deviceType === "mobile" ? "px-6 py-3 text-sm gap-2 min-h-[44px]" : "px-4 py-2 text-xs gap-1.5 min-h-[40px]"
+              )}
+              aria-label="创建首个家庭档案"
+            >
+              <UserPlus className={cn(
+                deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
+              )} />
+              创建首个家庭档案
+            </Button>
+          )}
         </div>
       )}
 
@@ -2352,7 +2370,7 @@ export function PatientList() {
                               deviceType === "mobile" ? "text-[10px]" : "text-xs"
                             )}>年龄</label>
                             <Input
-                              value={member.age}
+                              value={member.age.toString()}
                               onChange={(e) => updateFamilyMember(index, "age", e.target.value)}
                               placeholder="年龄"
                               type="number"

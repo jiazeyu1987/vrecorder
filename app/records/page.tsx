@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { WechatRecordHeader } from "@/components/wechat-record-header"
+import { ProtectedRoute } from "@/components/protected-route"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import {
@@ -827,7 +828,8 @@ export default function RecordsPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${deviceType === "mobile" ? "pb-24" : deviceType === "tablet" ? "pb-22" : "pb-20"}`}>
+    <ProtectedRoute>
+      <div className={`min-h-screen bg-gray-50 ${deviceType === "mobile" ? "pb-24" : deviceType === "tablet" ? "pb-22" : "pb-20"}`}>
       {/* 微信风格的记录页头部 */}
       <WechatRecordHeader
         title="患者记录"
@@ -1532,6 +1534,6 @@ export default function RecordsPage() {
       </div>
 
       <BottomNavigation activeTab="records" />
-    </div>
+    </ProtectedRoute>
   )
 }
