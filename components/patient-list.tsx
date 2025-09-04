@@ -159,6 +159,7 @@ export function PatientList() {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [editingPatient, setEditingPatient] = useState(false)
+  const [editingFamily, setEditingFamily] = useState(false)
   const [showFilterOptions, setShowFilterOptions] = useState(false)
   const deviceType = useDeviceType()
   const isMobile = useIsMobile()
@@ -178,6 +179,20 @@ export function PatientList() {
     ],
   })
   const [editedPatientData, setEditedPatientData] = useState<Partial<FamilyMember>>({})
+  const [editedFamilyData, setEditedFamilyData] = useState<Partial<CreateFamilyRequest>>({})
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [editedMemberData, setEditedMemberData] = useState<Partial<FamilyMember>>({})
+  const [newMember, setNewMember] = useState<Partial<CreateMemberRequest>>({
+    name: "",
+    age: 0,
+    gender: "",
+    relationship: "",
+    conditions: "",
+    packageType: "基础套餐",
+    paymentStatus: "normal",
+    phone: "",
+    medications: ""
+  })
   const [newRecord, setNewRecord] = useState<Partial<HealthRecord>>({
     serviceType: "",
     location: "",
@@ -370,6 +385,236 @@ export function PatientList() {
   const cancelEditing = () => {
     setEditingPatient(false)
     setEditedPatientData({})
+  }
+
+  // 家庭编辑相关函数
+  const handleEditFamily = async () => {
+    console.log("handleEditFamily called, editingFamily:", editingFamily)
+    
+    if (editingFamily && selectedFamily) {
+      try {
+        console.log("保存家庭信息, editedFamilyData:", editedFamilyData)
+        
+        // 构造更新数据，只包含被修改的字段
+        const updateData: Partial<CreateFamilyRequest> = {}
+        
+        if (editedFamilyData.householdHead !== undefined) {
+          updateData.householdHead = editedFamilyData.householdHead
+        }
+        if (editedFamilyData.address !== undefined) {
+          updateData.address = editedFamilyData.address  
+        }
+        if (editedFamilyData.phone !== undefined) {
+          updateData.phone = editedFamilyData.phone
+        }
+
+        console.log("发送更新请求, updateData:", updateData)
+        await updateFamilyInfo(selectedFamily.id, updateData)
+        
+        toast.success('家庭信息更新成功！')
+        console.log("家庭信息更新成功")
+        
+        setEditingFamily(false)
+        setEditedFamilyData({})
+        
+        // 刷新数据以显示最新信息
+        await refreshData()
+        
+      } catch (error) {
+        console.error('更新家庭信息失败:', error)
+        toast.error(error instanceof Error ? error.message : '更新失败，请重试')
+      }
+    } else {
+      // 开始编辑模式
+      console.log("开始编辑家庭信息")
+      setEditingFamily(true)
+      
+      if (selectedFamily) {
+        setEditedFamilyData({
+          householdHead: selectedFamily.householdHead,
+          address: selectedFamily.address,
+          phone: selectedFamily.phone,
+        })
+        console.log("初始化编辑数据:", {
+          householdHead: selectedFamily.householdHead,
+          address: selectedFamily.address,
+          phone: selectedFamily.phone,
+        })
+      }
+    }
+  }
+
+  const updateEditedFamilyData = (field: string, value: any) => {
+    console.log(`更新家庭字段 ${field}:`, value)
+    setEditedFamilyData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const cancelFamilyEditing = () => {
+    console.log("取消家庭编辑")
+    setEditingFamily(false)
+    setEditedFamilyData({})
+  }
+
+  // 成员编辑相关函数
+  const handleEditMember = async (member: FamilyMember) => {
+    console.log("开始编辑成员:", member)
+    if (editingMemberId === member.id.toString() && selectedFamily) {
+      try {
+        console.log("保存成员信息, editedMemberData:", editedMemberData)
+        
+        const updateData: Partial<CreateMemberRequest> = {}
+        
+        if (editedMemberData.name !== undefined) {
+          updateData.name = editedMemberData.name
+        }
+        if (editedMemberData.age !== undefined) {
+          updateData.age = editedMemberData.age
+        }
+        if (editedMemberData.gender !== undefined) {
+          updateData.gender = editedMemberData.gender
+        }
+        if (editedMemberData.relationship !== undefined) {
+          updateData.relationship = editedMemberData.relationship
+        }
+        if (editedMemberData.packageType !== undefined) {
+          updateData.packageType = editedMemberData.packageType
+        }
+        if (editedMemberData.paymentStatus !== undefined) {
+          updateData.paymentStatus = editedMemberData.paymentStatus
+        }
+        if (editedMemberData.phone !== undefined) {
+          updateData.phone = editedMemberData.phone
+        }
+        if (editedMemberData.conditions !== undefined) {
+          updateData.conditions = Array.isArray(editedMemberData.conditions) 
+            ? editedMemberData.conditions.join(', ')
+            : editedMemberData.conditions || ''
+        }
+        if (editedMemberData.medications !== undefined) {
+          updateData.medications = Array.isArray(editedMemberData.medications)
+            ? editedMemberData.medications.join(', ')
+            : editedMemberData.medications || ''
+        }
+
+        console.log("发送成员更新请求, updateData:", updateData)
+        await updateMemberInfo(selectedFamily.id, member.id.toString(), updateData)
+        
+        toast.success('成员信息更新成功！')
+        console.log("成员信息更新成功")
+        
+        setEditingMemberId(null)
+        setEditedMemberData({})
+        
+        // 刷新数据
+        await refreshData()
+        
+      } catch (error) {
+        console.error('更新成员信息失败:', error)
+        toast.error(error instanceof Error ? error.message : '更新失败，请重试')
+      }
+    } else {
+      // 开始编辑模式
+      console.log("开始编辑成员信息, member.id:", member.id)
+      setEditingMemberId(member.id.toString())
+      
+      setEditedMemberData({
+        name: member.name,
+        age: member.age,
+        gender: member.gender,
+        relationship: member.relationship,
+        packageType: member.packageType,
+        paymentStatus: member.paymentStatus,
+        phone: member.phone,
+        conditions: member.conditions,
+        medications: member.medications,
+      })
+      console.log("初始化编辑数据:", editedMemberData)
+    }
+  }
+
+  const updateEditedMemberData = (field: string, value: any) => {
+    console.log(`更新成员字段 ${field}:`, value)
+    setEditedMemberData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const cancelMemberEditing = () => {
+    console.log("取消成员编辑")
+    setEditingMemberId(null)
+    setEditedMemberData({})
+  }
+
+  const handleAddNewMember = async () => {
+    if (!selectedFamily) return
+    
+    try {
+      console.log("添加新成员:", newMember)
+      
+      // 验证必填字段
+      if (!newMember.name || !newMember.age || !newMember.gender || !newMember.relationship) {
+        toast.error('请填写完整的成员信息')
+        return
+      }
+
+      await addMemberToFamily(selectedFamily.id, newMember)
+      toast.success('成员添加成功！')
+      console.log("成员添加成功")
+      
+      // 重置表单
+      setNewMember({
+        name: "",
+        age: 0,
+        gender: "",
+        relationship: "",
+        conditions: "",
+        packageType: "基础套餐",
+        paymentStatus: "normal",
+        phone: "",
+        medications: ""
+      })
+      
+      // 刷新数据
+      await refreshData()
+      
+    } catch (error) {
+      console.error('添加成员失败:', error)
+      toast.error(error instanceof Error ? error.message : '添加失败，请重试')
+    }
+  }
+
+  const handleDeleteMember = async (member: FamilyMember) => {
+    if (!selectedFamily) return
+    
+    // 确认删除
+    if (!confirm(`确定要删除成员 ${member.name} 吗？此操作不可恢复。`)) {
+      return
+    }
+    
+    try {
+      console.log("删除成员:", member)
+      await removeMemberFromFamily(selectedFamily.id, member.id.toString())
+      toast.success('成员删除成功！')
+      console.log("成员删除成功")
+      
+      // 刷新数据
+      await refreshData()
+      
+    } catch (error) {
+      console.error('删除成员失败:', error)
+      toast.error(error instanceof Error ? error.message : '删除失败，请重试')
+    }
+  }
+
+  const updateNewMember = (field: string, value: any) => {
+    setNewMember((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
   }
 
   const startRecording = () => {
@@ -1088,29 +1333,51 @@ export function PatientList() {
             <h1 className={cn(
               "font-semibold text-gray-900",
               deviceType === "mobile" ? "text-xl" : "text-lg"
-            )}>{selectedFamily.householdHead}家</h1>
+            )}>{editingFamily ? (
+              <Input
+                value={editedFamilyData.householdHead || ''}
+                onChange={(e) => updateEditedFamilyData('householdHead', e.target.value)}
+                className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-lg font-semibold"
+                placeholder="户主姓名"
+              />
+            ) : `${selectedFamily.householdHead}家`}</h1>
             <p className={cn(
               "text-gray-600",
               deviceType === "mobile" ? "text-sm" : "text-xs"
             )}>家庭档案管理</p>
           </div>
           <div className="flex gap-2">
+            {editingFamily && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className={cn(
+                  "bg-gray-500/10 hover:bg-gray-500/20 border-gray-200 text-gray-700",
+                  "rounded-xl shadow-md backdrop-blur-sm active:scale-95 transition-all duration-200",
+                  deviceType === "mobile" ? "px-3 py-2 text-xs gap-1" : "px-2 py-1.5 text-xs gap-1"
+                )}
+                onClick={cancelFamilyEditing}
+              >
+                <X className={cn(
+                  deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
+                )} />
+                取消
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm"
               className={cn(
-                "bg-blue-500/10 hover:bg-blue-500/20 border-blue-200 text-blue-700",
+                editingFamily ? "bg-green-500/10 hover:bg-green-500/20 border-green-200 text-green-700" : "bg-blue-500/10 hover:bg-blue-500/20 border-blue-200 text-blue-700",
                 "rounded-xl shadow-md backdrop-blur-sm active:scale-95 transition-all duration-200",
                 deviceType === "mobile" ? "px-3 py-2 text-xs gap-1" : "px-2 py-1.5 text-xs gap-1"
               )}
-              onClick={() => {
-                // 添加编辑家庭信息逻辑
-              }}
+              onClick={handleEditFamily}
             >
               <Edit className={cn(
                 deviceType === "mobile" ? "h-3.5 w-3.5" : "h-3 w-3"
               )} />
-              编辑
+              {editingFamily ? "保存" : "编辑"}
             </Button>
           </div>
         </div>
@@ -1147,10 +1414,19 @@ export function PatientList() {
                     "text-gray-500 font-medium mb-0.5",
                     deviceType === "mobile" ? "text-xs" : "text-[10px]"
                   )}>家庭地址</p>
-                  <p className={cn(
-                    "text-gray-800 font-medium",
-                    deviceType === "mobile" ? "text-sm leading-relaxed" : "text-xs leading-relaxed"
-                  )}>{selectedFamily.address}</p>
+                  {editingFamily ? (
+                    <Input
+                      value={editedFamilyData.address || ''}
+                      onChange={(e) => updateEditedFamilyData('address', e.target.value)}
+                      className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                      placeholder="家庭地址"
+                    />
+                  ) : (
+                    <p className={cn(
+                      "text-gray-800 font-medium",
+                      deviceType === "mobile" ? "text-sm leading-relaxed" : "text-xs leading-relaxed"
+                    )}>{selectedFamily.address}</p>
+                  )}
                 </div>
               </div>
               
@@ -1166,10 +1442,19 @@ export function PatientList() {
                     "text-gray-500 font-medium mb-0.5",
                     deviceType === "mobile" ? "text-xs" : "text-[10px]"
                   )}>联系电话</p>
-                  <p className={cn(
-                    "text-gray-800 font-medium",
-                    deviceType === "mobile" ? "text-sm" : "text-xs"
-                  )}>{selectedFamily.phone}</p>
+                  {editingFamily ? (
+                    <Input
+                      value={editedFamilyData.phone || ''}
+                      onChange={(e) => updateEditedFamilyData('phone', e.target.value)}
+                      className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                      placeholder="联系电话"
+                    />
+                  ) : (
+                    <p className={cn(
+                      "text-gray-800 font-medium",
+                      deviceType === "mobile" ? "text-sm" : "text-xs"
+                    )}>{selectedFamily.phone}</p>
+                  )}
                 </div>
               </div>
               
@@ -1220,6 +1505,19 @@ export function PatientList() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 家庭编辑模式提示 */}
+        {editingFamily && (
+          <Card className="shadow-sm border-blue-200 bg-blue-50/50 mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-blue-700">
+                <Edit className="h-4 w-4" />
+                <span className="text-sm font-medium">家庭信息编辑模式</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">修改完成后请点击"保存"按钮保存更改，或点击"取消"放弃修改</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 微信小程序风格的家庭成员卡片 */}
         <Card className={cn(
@@ -1381,44 +1679,416 @@ export function PatientList() {
 
                   {/* 成员操作按钮 */}
                   <div className="flex gap-2 pt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={cn(
-                        "flex-1 bg-blue-50/60 hover:bg-blue-100/60 border-blue-200/60 text-blue-700",
-                        "rounded-xl transition-all duration-150 active:scale-95",
-                        deviceType === "mobile" ? "h-8 text-xs" : "h-7 text-[10px]"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedPatient(member)
-                      }}
-                    >
-                      查看详情
-                    </Button>
-                    {member.paymentStatus === "overdue" && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className={cn(
-                          "bg-orange-50/60 hover:bg-orange-100/60 border-orange-200/60 text-orange-700",
-                          "rounded-xl transition-all duration-150 active:scale-95",
-                          deviceType === "mobile" ? "h-8 text-xs px-3" : "h-7 text-[10px] px-2"
+                    {editingFamily ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            editingMemberId === member.id.toString() 
+                              ? "flex-1 bg-green-50/60 hover:bg-green-100/60 border-green-200/60 text-green-700"
+                              : "flex-1 bg-blue-50/60 hover:bg-blue-100/60 border-blue-200/60 text-blue-700",
+                            "rounded-xl transition-all duration-150 active:scale-95",
+                            deviceType === "mobile" ? "h-8 text-xs" : "h-7 text-[10px]"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditMember(member)
+                          }}
+                        >
+                          <Edit className={cn(
+                            deviceType === "mobile" ? "h-3 w-3 mr-1" : "h-2.5 w-2.5 mr-1"
+                          )} />
+                          {editingMemberId === member.id.toString() ? "保存" : "编辑"}
+                        </Button>
+                        {editingMemberId === member.id.toString() && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={cn(
+                              "bg-gray-50/60 hover:bg-gray-100/60 border-gray-200/60 text-gray-700",
+                              "rounded-xl transition-all duration-150 active:scale-95",
+                              deviceType === "mobile" ? "h-8 text-xs px-3" : "h-7 text-[10px] px-2"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              cancelMemberEditing()
+                            }}
+                          >
+                            <X className={cn(
+                              deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                            )} />
+                          </Button>
                         )}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // 添加催缴逻辑
-                        }}
-                      >
-                        催缴
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            "bg-red-50/60 hover:bg-red-100/60 border-red-200/60 text-red-700",
+                            "rounded-xl transition-all duration-150 active:scale-95",
+                            deviceType === "mobile" ? "h-8 text-xs px-3" : "h-7 text-[10px] px-2"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteMember(member)
+                          }}
+                        >
+                          <Trash2 className={cn(
+                            deviceType === "mobile" ? "h-3 w-3" : "h-2.5 w-2.5"
+                          )} />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn(
+                            "flex-1 bg-blue-50/60 hover:bg-blue-100/60 border-blue-200/60 text-blue-700",
+                            "rounded-xl transition-all duration-150 active:scale-95",
+                            deviceType === "mobile" ? "h-8 text-xs" : "h-7 text-[10px]"
+                          )}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedPatient(member)
+                          }}
+                        >
+                          查看详情
+                        </Button>
+                        {member.paymentStatus === "overdue" && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className={cn(
+                              "bg-orange-50/60 hover:bg-orange-100/60 border-orange-200/60 text-orange-700",
+                              "rounded-xl transition-all duration-150 active:scale-95",
+                              deviceType === "mobile" ? "h-8 text-xs px-3" : "h-7 text-[10px] px-2"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              // 添加催缴逻辑
+                            }}
+                          >
+                            催缴
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* 添加新成员按钮 */}
+            {editingFamily && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full bg-green-50/60 hover:bg-green-100/60 border-green-200/60 text-green-700",
+                    "rounded-xl border-2 border-dashed transition-all duration-200",
+                    deviceType === "mobile" ? "h-10 text-sm" : "h-9 text-xs"
+                  )}
+                  onClick={handleAddNewMember}
+                >
+                  <Plus className={cn(
+                    "mr-2",
+                    deviceType === "mobile" ? "h-4 w-4" : "h-3.5 w-3.5"
+                  )} />
+                  添加新成员
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* 成员编辑表单 */}
+        {editingFamily && editingMemberId && (
+          <Card className="shadow-sm border-blue-200 bg-blue-50/50 mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-blue-700 flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                <span className="text-sm font-medium">编辑成员信息</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">姓名</Label>
+                  <Input
+                    value={editedMemberData.name || ""}
+                    onChange={(e) => updateEditedMemberData("name", e.target.value)}
+                    className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white"
+                    placeholder="成员姓名"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">年龄</Label>
+                  <Input
+                    value={editedMemberData.age?.toString() || ""}
+                    onChange={(e) => updateEditedMemberData("age", parseInt(e.target.value) || 0)}
+                    type="number"
+                    className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white"
+                    placeholder="年龄"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">性别</Label>
+                  <Select
+                    value={editedMemberData.gender || ""}
+                    onValueChange={(value) => updateEditedMemberData("gender", value)}
+                  >
+                    <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择性别" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="男">男</SelectItem>
+                      <SelectItem value="女">女</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">关系</Label>
+                  <Select
+                    value={editedMemberData.relationship || ""}
+                    onValueChange={(value) => updateEditedMemberData("relationship", value)}
+                  >
+                    <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择关系" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="户主">户主</SelectItem>
+                      <SelectItem value="配偶">配偶</SelectItem>
+                      <SelectItem value="儿子">儿子</SelectItem>
+                      <SelectItem value="女儿">女儿</SelectItem>
+                      <SelectItem value="父亲">父亲</SelectItem>
+                      <SelectItem value="母亲">母亲</SelectItem>
+                      <SelectItem value="其他">其他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">套餐类型</Label>
+                  <Select
+                    value={editedMemberData.packageType || ""}
+                    onValueChange={(value) => updateEditedMemberData("packageType", value)}
+                  >
+                    <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择套餐" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="基础套餐">基础套餐</SelectItem>
+                      <SelectItem value="标准套餐">标准套餐</SelectItem>
+                      <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">支付状态</Label>
+                  <Select
+                    value={editedMemberData.paymentStatus || ""}
+                    onValueChange={(value) => updateEditedMemberData("paymentStatus", value)}
+                  >
+                    <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">正常</SelectItem>
+                      <SelectItem value="overdue">欠费</SelectItem>
+                      <SelectItem value="suspended">暂停</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">手机号码</Label>
+                <Input
+                  value={editedMemberData.phone || ""}
+                  onChange={(e) => updateEditedMemberData("phone", e.target.value)}
+                  className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white"
+                  placeholder="手机号码"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">健康状况</Label>
+                <Input
+                  value={Array.isArray(editedMemberData.conditions) 
+                    ? editedMemberData.conditions.join(', ') 
+                    : editedMemberData.conditions || ""}
+                  onChange={(e) => updateEditedMemberData("conditions", e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white"
+                  placeholder="健康状况，多个用逗号分隔"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">用药情况</Label>
+                <Input
+                  value={Array.isArray(editedMemberData.medications) 
+                    ? editedMemberData.medications.join(', ') 
+                    : editedMemberData.medications || ""}
+                  onChange={(e) => updateEditedMemberData("medications", e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                  className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white"
+                  placeholder="用药情况，多个用逗号分隔"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 添加新成员表单 */}
+        {editingFamily && (
+          <Card className="shadow-sm border-green-200 bg-green-50/50 mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-green-700 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="text-sm font-medium">添加新成员</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">姓名 *</Label>
+                  <Input
+                    value={newMember.name || ""}
+                    onChange={(e) => updateNewMember("name", e.target.value)}
+                    className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white"
+                    placeholder="成员姓名"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">年龄 *</Label>
+                  <Input
+                    value={newMember.age?.toString() || ""}
+                    onChange={(e) => updateNewMember("age", parseInt(e.target.value) || 0)}
+                    type="number"
+                    className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white"
+                    placeholder="年龄"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">性别 *</Label>
+                  <Select
+                    value={newMember.gender || ""}
+                    onValueChange={(value) => updateNewMember("gender", value)}
+                  >
+                    <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择性别" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="男">男</SelectItem>
+                      <SelectItem value="女">女</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">关系 *</Label>
+                  <Select
+                    value={newMember.relationship || ""}
+                    onValueChange={(value) => updateNewMember("relationship", value)}
+                  >
+                    <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择关系" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="户主">户主</SelectItem>
+                      <SelectItem value="配偶">配偶</SelectItem>
+                      <SelectItem value="儿子">儿子</SelectItem>
+                      <SelectItem value="女儿">女儿</SelectItem>
+                      <SelectItem value="父亲">父亲</SelectItem>
+                      <SelectItem value="母亲">母亲</SelectItem>
+                      <SelectItem value="其他">其他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">套餐类型</Label>
+                  <Select
+                    value={newMember.packageType || "基础套餐"}
+                    onValueChange={(value) => updateNewMember("packageType", value)}
+                  >
+                    <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择套餐" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="基础套餐">基础套餐</SelectItem>
+                      <SelectItem value="标准套餐">标准套餐</SelectItem>
+                      <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">支付状态</Label>
+                  <Select
+                    value={newMember.paymentStatus || "normal"}
+                    onValueChange={(value) => updateNewMember("paymentStatus", value)}
+                  >
+                    <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
+                      <SelectValue placeholder="选择状态" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">正常</SelectItem>
+                      <SelectItem value="overdue">欠费</SelectItem>
+                      <SelectItem value="suspended">暂停</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">手机号码</Label>
+                <Input
+                  value={newMember.phone || ""}
+                  onChange={(e) => updateNewMember("phone", e.target.value)}
+                  className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white"
+                  placeholder="手机号码"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">健康状况</Label>
+                <Input
+                  value={newMember.conditions || ""}
+                  onChange={(e) => updateNewMember("conditions", e.target.value)}
+                  className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white"
+                  placeholder="健康状况，多个用逗号分隔"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600">用药情况</Label>
+                <Input
+                  value={newMember.medications || ""}
+                  onChange={(e) => updateNewMember("medications", e.target.value)}
+                  className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white"
+                  placeholder="用药情况，多个用逗号分隔"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={handleAddNewMember}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  添加成员
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setNewMember({
+                    name: "",
+                    age: 0,
+                    gender: "",
+                    relationship: "",
+                    conditions: "",
+                    packageType: "基础套餐",
+                    paymentStatus: "normal",
+                    phone: "",
+                    medications: ""
+                  })}
+                  className="px-4 border-green-200 text-green-700 hover:bg-green-50 rounded-lg"
+                >
+                  重置
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 微信小程序风格的家庭健康记录卡片 */}
         <Card className={cn(
