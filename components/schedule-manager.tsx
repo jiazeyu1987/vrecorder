@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { toast } from "sonner"
+import { 
+  Appointment, 
+  ServiceType, 
+  CreateAppointmentRequest,
+  getTodayAppointments,
+  getAppointments,
+  getAppointmentDetail,
+  createAppointment,
+  updateAppointment,
+  deleteAppointment,
+  completeAppointment,
+  getServiceTypes,
+  getFamilies 
+} from "@/lib/api"
 import {
   Clock,
   MapPin,
@@ -26,99 +41,123 @@ import {
   X,
 } from "lucide-react"
 
-interface Appointment {
-  id: string
-  time: string
-  duration: string
-  patientName: string
-  patientAge: number
-  condition: string
-  address: string
-  serviceType: string
-  paymentStatus: "pending" | "paid" | "overdue"
-  paymentAmount: number
-  status: "scheduled" | "in-progress" | "completed" | "cancelled"
-  phone: string
-  notes?: string
-}
+// 使用从 API 导入的 Appointment 接口
 
-const mockAppointments: Appointment[] = [
-  {
-    id: "1",
-    time: "09:00",
-    duration: "1小时",
-    patientName: "张明",
-    patientAge: 65,
-    condition: "高血压",
-    address: "朝阳区XX路XX号",
-    serviceType: "基础健康监测",
-    paymentStatus: "pending",
-    paymentAmount: 280,
-    status: "scheduled",
-    phone: "138****1234",
-    notes: "患者反映最近血压不稳定",
-  },
-  {
-    id: "2",
-    time: "11:00",
-    duration: "1.5小时",
-    patientName: "李华",
-    patientAge: 62,
-    condition: "糖尿病",
-    address: "朝阳区YY路YY号",
-    serviceType: "综合健康评估",
-    paymentStatus: "paid",
-    paymentAmount: 350,
-    status: "in-progress",
-    phone: "139****5678",
-  },
-  {
-    id: "3",
-    time: "14:00",
-    duration: "1小时",
-    patientName: "王小明",
-    patientAge: 35,
-    condition: "健康体检",
-    address: "海淀区ZZ路ZZ号",
-    serviceType: "常规体检",
-    paymentStatus: "overdue",
-    paymentAmount: 200,
-    status: "scheduled",
-    phone: "136****9012",
-  },
-  {
-    id: "4",
-    time: "16:00",
-    duration: "1小时",
-    patientName: "陈秀英",
-    patientAge: 78,
-    condition: "高血压+糖尿病",
-    address: "海淀区康乐小区5号楼201",
-    serviceType: "复合疾病管理",
-    paymentStatus: "paid",
-    paymentAmount: 400,
-    status: "completed",
-    phone: "137****3456",
-  },
-]
+// 移除模拟数据，使用真实API数据
 
 export function ScheduleManager() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false)
+  const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
+  const [families, setFamilies] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const isMobile = useIsMobile()
+  // 获取当前时间，并设置默认时间为一小时后
+  const getDefaultDateTime = () => {
+    const now = new Date()
+    const defaultTime = new Date(now.getTime() + 60 * 60 * 1000) // 一小时后
+    return {
+      date: now.toISOString().split('T')[0],
+      time: defaultTime.toTimeString().slice(0, 5) // HH:MM格式
+    }
+  }
+
   const [newAppointment, setNewAppointment] = useState({
-    time: "",
-    duration: "1小时",
-    patientName: "",
-    patientAge: "",
-    condition: "",
-    address: "",
-    serviceType: "",
-    paymentAmount: "",
-    phone: "",
+    patient_id: 0,
+    service_type_id: undefined,
+    scheduled_date: getDefaultDateTime().date,
+    start_time: getDefaultDateTime().time,
+    end_time: "",
+    duration_minutes: 60, // 默认1小时
+    appointment_type: "regular",
+    status: "scheduled",
     notes: "",
+    payment: {
+      amount: 0,
+      payment_method: "cash",
+      payment_status: "pending",
+      notes: ""
+    }
   })
+  // 加载数据
+  useEffect(() => {
+    loadInitialData()
+  }, [])
+
+  // 当日期改变时，重新加载预约数据
+  useEffect(() => {
+    if (selectedDate) {
+      loadAppointmentsByDate()
+    }
+  }, [selectedDate])
+
+  const loadInitialData = async () => {
+    try {
+      console.log('ScheduleManager: 开始加载初始数据')
+      const [serviceTypesResponse, familiesResponse] = await Promise.all([
+        getServiceTypes(),
+        getFamilies(1, 100) // 获取前100个家庭
+      ])
+      
+      console.log('ScheduleManager: 加载服务类型', serviceTypesResponse.data)
+      console.log('ScheduleManager: 加载家庭数据', familiesResponse.data)
+      console.log('ScheduleManager: 家庭数据结构', familiesResponse.data.families)
+      
+      setServiceTypes(serviceTypesResponse.data)
+      setFamilies(familiesResponse.data.families)
+      
+      // 设置默认预约日期和时间
+      const defaultDateTime = getDefaultDateTime()
+      setNewAppointment(prev => ({
+        ...prev,
+        scheduled_date: defaultDateTime.date,
+        start_time: defaultDateTime.time
+      }))
+      
+    } catch (error) {
+      console.error('ScheduleManager: 加载初始数据失败', error)
+      toast.error('加载数据失败，请刷新页面重试')
+    }
+  }
+
+  const loadAppointmentsByDate = async () => {
+    try {
+      setLoading(true)
+      console.log('ScheduleManager: 加载指定日期的预约', selectedDate.toISOString().split('T')[0])
+      
+      const dateStr = selectedDate.toISOString().split('T')[0]
+      const response = await getAppointments(1, 100, '', dateStr, dateStr)
+      
+      console.log('ScheduleManager: 加载预约数据成功', response.data)
+      setAppointments(response.data.appointments)
+    } catch (error) {
+      console.error('ScheduleManager: 加载预约数据失败', error)
+      toast.error('加载预约数据失败')
+      setAppointments([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadTodayAppointments = async () => {
+    try {
+      setLoading(true)
+      console.log('ScheduleManager: 加载今日预约')
+      
+      const response = await getTodayAppointments()
+      console.log('ScheduleManager: 今日预约数据', response.data)
+      setAppointments(response.data.appointments || [])
+    } catch (error) {
+      console.error('ScheduleManager: 加载今日预约失败', error)
+      toast.error('加载今日预约失败')
+      setAppointments([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("zh-CN", {
@@ -135,7 +174,8 @@ export function ScheduleManager() {
         return "bg-green-100 text-green-700 border-green-200"
       case "pending":
         return "bg-orange-100 text-orange-700 border-orange-200"
-      case "overdue":
+      case "failed":
+      case "refunded":
         return "bg-red-100 text-red-700 border-red-200"
       default:
         return "bg-gray-100 text-gray-700 border-gray-200"
@@ -148,8 +188,10 @@ export function ScheduleManager() {
         return "已收款"
       case "pending":
         return "待收款"
-      case "overdue":
-        return "逾期"
+      case "failed":
+        return "收款失败"
+      case "refunded":
+        return "已退款"
       default:
         return "未知"
     }
@@ -159,12 +201,14 @@ export function ScheduleManager() {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-700 border-green-200"
-      case "in-progress":
+      case "confirmed":
         return "bg-blue-100 text-blue-700 border-blue-200"
       case "scheduled":
         return "bg-gray-100 text-gray-700 border-gray-200"
       case "cancelled":
         return "bg-red-100 text-red-700 border-red-200"
+      case "rescheduled":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200"
       default:
         return "bg-gray-100 text-gray-700 border-gray-200"
     }
@@ -174,12 +218,14 @@ export function ScheduleManager() {
     switch (status) {
       case "completed":
         return "已完成"
-      case "in-progress":
-        return "进行中"
+      case "confirmed":
+        return "已确认"
       case "scheduled":
         return "待服务"
       case "cancelled":
         return "已取消"
+      case "rescheduled":
+        return "已改期"
       default:
         return "未知"
     }
@@ -191,21 +237,139 @@ export function ScheduleManager() {
     setSelectedDate(newDate)
   }
 
-  const handleCreateAppointment = () => {
-    console.log("[v0] Creating new appointment:", newAppointment)
-    setShowNewAppointmentModal(false)
-    setNewAppointment({
-      time: "",
-      duration: "1小时",
-      patientName: "",
-      patientAge: "",
-      condition: "",
-      address: "",
-      serviceType: "",
-      paymentAmount: "",
-      phone: "",
-      notes: "",
-    })
+  // 验证预约时间是否在未来
+  const validateAppointmentTime = (date: string, time: string) => {
+    const appointmentDateTime = new Date(`${date} ${time}`)
+    const now = new Date()
+    return appointmentDateTime > now
+  }
+
+  const handleCreateAppointment = async () => {
+    try {
+      console.log("ScheduleManager: 创建新预约", newAppointment)
+      
+      if (!newAppointment.patient_id || !newAppointment.start_time || !newAppointment.scheduled_date) {
+        toast.error('请填写必要的预约信息')
+        return
+      }
+      
+      // 验证预约时间不能是过去时间
+      if (!validateAppointmentTime(newAppointment.scheduled_date, newAppointment.start_time)) {
+        toast.error('预约时间不能是过去时间，请选择未来的时间')
+        return
+      }
+      
+      // 准备发送到后端的数据，字段映射
+      const appointmentData = {
+        patient_id: newAppointment.patient_id,
+        scheduled_date: newAppointment.scheduled_date,
+        scheduled_time: newAppointment.start_time, // 后端期望的是 scheduled_time
+        appointment_type: newAppointment.appointment_type,
+        status: newAppointment.status,
+        notes: newAppointment.notes,
+        payment: newAppointment.payment
+      }
+      
+      const response = await createAppointment(appointmentData)
+      console.log("ScheduleManager: 创建预约成功", response.data)
+      
+      toast.success('预约创建成功')
+      setShowNewAppointmentModal(false)
+      
+      // 重置表单
+      const defaultDateTime = getDefaultDateTime()
+      setNewAppointment({
+        patient_id: 0,
+        service_type_id: undefined,
+        scheduled_date: defaultDateTime.date,
+        start_time: defaultDateTime.time,
+        end_time: "",
+        duration_minutes: 60,
+        appointment_type: "regular",
+        status: "scheduled",
+        notes: "",
+        payment: {
+          amount: 0,
+          payment_method: "cash",
+          payment_status: "pending",
+          notes: ""
+        }
+      })
+      
+      // 重新加载预约数据
+      loadAppointmentsByDate()
+      
+    } catch (error) {
+      console.error('ScheduleManager: 创建预约失败', error)
+      toast.error('创建预约失败，请重试')
+    }
+  }
+
+  const handleUpdateAppointment = async (appointmentId: number, updates: Partial<CreateAppointmentRequest>) => {
+    try {
+      console.log("ScheduleManager: 更新预约", appointmentId, updates)
+      
+      const response = await updateAppointment(appointmentId, updates)
+      console.log("ScheduleManager: 更新预约成功", response.data)
+      
+      toast.success('预约更新成功')
+      
+      // 重新加载预约数据
+      loadAppointmentsByDate()
+      
+      // 如果正在查看详情，更新详情数据
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment(response.data)
+      }
+      
+    } catch (error) {
+      console.error('ScheduleManager: 更新预约失败', error)
+      toast.error('更新预约失败，请重试')
+    }
+  }
+
+  const handleDeleteAppointment = async (appointmentId: number) => {
+    try {
+      console.log("ScheduleManager: 删除预约", appointmentId)
+      
+      await deleteAppointment(appointmentId)
+      toast.success('预约删除成功')
+      
+      // 重新加载预约数据
+      loadAppointmentsByDate()
+      
+      // 如果正在查看详情，返回列表
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment(null)
+      }
+      
+    } catch (error) {
+      console.error('ScheduleManager: 删除预约失败', error)
+      toast.error('删除预约失败，请重试')
+    }
+  }
+
+  const handleCompleteAppointment = async (appointmentId: number) => {
+    try {
+      console.log("ScheduleManager: 完成预约", appointmentId)
+      
+      const response = await completeAppointment(appointmentId)
+      console.log("ScheduleManager: 完成预约成功", response.data)
+      
+      toast.success('预约已完成')
+      
+      // 重新加载预约数据
+      loadAppointmentsByDate()
+      
+      // 如果正在查看详情，更新详情数据
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment(response.data)
+      }
+      
+    } catch (error) {
+      console.error('ScheduleManager: 完成预约失败', error)
+      toast.error('完成预约失败，请重试')
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -246,8 +410,8 @@ export function ScheduleManager() {
                     <User className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold">{selectedAppointment.patientName}</h2>
-                    <p className="text-blue-100 text-sm mt-1">{selectedAppointment.patientAge}岁 · {selectedAppointment.condition}</p>
+                    <h2 className="text-xl font-semibold">{selectedAppointment.patient?.name || '未知患者'}</h2>
+                    <p className="text-blue-100 text-sm mt-1">{selectedAppointment.patient?.age}岁 · {selectedAppointment.patient?.relationship}</p>
                   </div>
                 </div>
               </div>
@@ -277,20 +441,22 @@ export function ScheduleManager() {
               <div className="flex items-start justify-between">
                 <span className="text-gray-600 text-sm">服务时间</span>
                 <span className="font-medium text-right">
-                  {selectedAppointment.time}<br/>
-                  <span className="text-xs text-gray-500">预计 {selectedAppointment.duration}</span>
+                  {selectedAppointment.start_time}{selectedAppointment.end_time ? ` - ${selectedAppointment.end_time}` : ''}<br/>
+                  {selectedAppointment.duration_minutes && (
+                    <span className="text-xs text-gray-500">预计 {selectedAppointment.duration_minutes}分钟</span>
+                  )}
                 </span>
               </div>
               <div className="w-full h-px bg-gray-100"></div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm">服务类型</span>
-                <span className="font-medium">{selectedAppointment.serviceType}</span>
+                <span className="font-medium">{selectedAppointment.service_type?.name || '未指定服务'}</span>
               </div>
               <div className="w-full h-px bg-gray-100"></div>
               <div className="flex items-start justify-between">
                 <span className="text-gray-600 text-sm">服务地址</span>
                 <div className="text-right max-w-48">
-                  <span className="font-medium text-sm leading-relaxed">{selectedAppointment.address}</span>
+                  <span className="font-medium text-sm leading-relaxed">{selectedAppointment.patient?.family?.address || '地址未知'}</span>
                 </div>
               </div>
             </div>
@@ -309,8 +475,8 @@ export function ScheduleManager() {
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm">联系电话</span>
-                <a href={`tel:${selectedAppointment.phone}`} className="font-medium text-blue-600 hover:text-blue-700">
-                  {selectedAppointment.phone}
+                <a href={`tel:${selectedAppointment.patient?.phone || selectedAppointment.patient?.family?.phone}`} className="font-medium text-blue-600 hover:text-blue-700">
+                  {selectedAppointment.patient?.phone || selectedAppointment.patient?.family?.phone || '未知电话'}
                 </a>
               </div>
             </div>
@@ -329,13 +495,13 @@ export function ScheduleManager() {
             <div className="px-6 py-4 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm">服务费用</span>
-                <span className="font-semibold text-xl text-gray-900">¥{selectedAppointment.paymentAmount}</span>
+                <span className="font-semibold text-xl text-gray-900">¥{selectedAppointment.payment?.amount || 0}</span>
               </div>
               <div className="w-full h-px bg-gray-100"></div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-600 text-sm">付款状态</span>
-                <Badge variant="outline" className={getPaymentStatusColor(selectedAppointment.paymentStatus)}>
-                  {getPaymentStatusText(selectedAppointment.paymentStatus)}
+                <Badge variant="outline" className={getPaymentStatusColor(selectedAppointment.payment?.payment_status || 'pending')}>
+                  {getPaymentStatusText(selectedAppointment.payment?.payment_status || 'pending')}
                 </Badge>
               </div>
             </div>
@@ -462,7 +628,16 @@ export function ScheduleManager() {
       </Card>
 
       <div className="space-y-3">
-        {mockAppointments.map((appointment) => (
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="text-gray-500">加载中...</div>
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-500">今天没有预约</div>
+          </div>
+        ) : (
+          appointments.map((appointment) => (
           <Card
             key={appointment.id}
             className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl cursor-pointer hover:bg-white/90 transition-all duration-200 hover:scale-[1.02]"
@@ -472,16 +647,20 @@ export function ScheduleManager() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{appointment.time}</span>
-                  <span className="text-sm text-muted-foreground">({appointment.duration})</span>
+                  <span className="font-medium">{appointment.start_time}</span>
+                  {appointment.duration_minutes && (
+                    <span className="text-sm text-muted-foreground">({appointment.duration_minutes}分钟)</span>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="outline" className={getStatusColor(appointment.status)}>
                     {getStatusText(appointment.status)}
                   </Badge>
-                  <Badge variant="outline" className={getPaymentStatusColor(appointment.paymentStatus)}>
-                    ¥{appointment.paymentAmount}
-                  </Badge>
+                  {appointment.payment && (
+                    <Badge variant="outline" className={getPaymentStatusColor(appointment.payment.payment_status)}>
+                      ¥{appointment.payment.amount}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -489,47 +668,92 @@ export function ScheduleManager() {
                 <div className="flex items-center gap-2">
                   <MapPin className="h-3 w-3 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    {appointment.patientName}家 - {appointment.serviceType}
+                    {appointment.patient?.name}家 - {appointment.service_type?.name || '未指定服务'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-3 w-3 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    {appointment.patientName} ({appointment.patientAge}岁，{appointment.condition}) |{" "}
-                    {appointment.address}
+                    {appointment.patient?.name} ({appointment.patient?.age}岁，{appointment.patient?.relationship}) |{" "}
+                    {appointment.patient?.family?.address || '地址未知'}
                   </span>
                 </div>
               </div>
 
               {appointment.status === "scheduled" && (
                 <div className="flex gap-2 mt-3 pt-3 border-t">
-                  <Button size="sm" variant="outline" className="flex-1 bg-transparent">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 bg-transparent"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleUpdateAppointment(appointment.id, { status: 'confirmed' })
+                    }}
+                  >
                     开始
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // TODO: 打开编辑对话框
+                    }}
+                  >
                     调整
                   </Button>
-                  {appointment.paymentStatus !== "paid" && (
-                    <Button size="sm" variant="outline" className="text-orange-600 bg-transparent">
+                  {appointment.payment?.payment_status !== "paid" && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-orange-600 bg-transparent"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleUpdateAppointment(appointment.id, { 
+                          payment: { 
+                            ...appointment.payment, 
+                            payment_status: 'paid' 
+                          } 
+                        })
+                      }}
+                    >
                       收款
                     </Button>
                   )}
                 </div>
               )}
 
-              {appointment.status === "in-progress" && (
+              {appointment.status === "confirmed" && (
                 <div className="flex gap-2 mt-3 pt-3 border-t">
-                  <Button size="sm" variant="outline" className="flex-1 text-green-600 bg-transparent">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 text-green-600 bg-transparent"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCompleteAppointment(appointment.id)
+                    }}
+                  >
                     完成
                   </Button>
-                  <Button size="sm" variant="outline" className="text-orange-600 bg-transparent">
-                    异常
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-orange-600 bg-transparent"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleUpdateAppointment(appointment.id, { status: 'cancelled' })
+                    }}
+                  >
+                    取消
                   </Button>
                 </div>
               )}
             </CardContent>
           </Card>
-        ))}
+        ))
+        )}
       </div>
 
       <Dialog open={showNewAppointmentModal} onOpenChange={setShowNewAppointmentModal}>
@@ -541,161 +765,108 @@ export function ScheduleManager() {
         </DialogTrigger>
         <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle>
               添加新预约
-              <Button variant="ghost" size="sm" onClick={() => setShowNewAppointmentModal(false)} className="p-1">
-                <X className="h-4 w-4" />
-              </Button>
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* 预约日期 */}
+            <div>
+              <Label htmlFor="date" className="text-sm font-medium">
+                预约日期
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={newAppointment.scheduled_date}
+                min={new Date().toISOString().split('T')[0]} // 限制不能选择过去日期
+                onChange={(e) => setNewAppointment(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="time" className="text-sm font-medium">
-                  服务时间
+                  预约时间
                 </Label>
                 <Input
                   id="time"
                   type="time"
-                  value={newAppointment.time}
-                  onChange={(e) => handleInputChange("time", e.target.value)}
+                  value={newAppointment.start_time}
+                  onChange={(e) => setNewAppointment(prev => ({ ...prev, start_time: e.target.value }))}
                   className="mt-1"
                 />
               </div>
               <div>
                 <Label htmlFor="duration" className="text-sm font-medium">
-                  服务时长
+                  预约时长
                 </Label>
-                <Select value={newAppointment.duration} onValueChange={(value) => handleInputChange("duration", value)}>
+                <Select value={newAppointment.duration_minutes.toString()} onValueChange={(value) => setNewAppointment(prev => ({ ...prev, duration_minutes: parseInt(value) }))}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue />
+                    <SelectValue placeholder="选择时长" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0.5小时">0.5小时</SelectItem>
-                    <SelectItem value="1小时">1小时</SelectItem>
-                    <SelectItem value="1.5小时">1.5小时</SelectItem>
-                    <SelectItem value="2小时">2小时</SelectItem>
+                    <SelectItem value="30">30分钟</SelectItem>
+                    <SelectItem value="60">1小时</SelectItem>
+                    <SelectItem value="90">1.5小时</SelectItem>
+                    <SelectItem value="120">2小时</SelectItem>
+                    <SelectItem value="150">2.5小时</SelectItem>
+                    <SelectItem value="180">3小时</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="patientName" className="text-sm font-medium">
-                  患者姓名
-                </Label>
-                <Input
-                  id="patientName"
-                  value={newAppointment.patientName}
-                  onChange={(e) => handleInputChange("patientName", e.target.value)}
-                  placeholder="请输入患者姓名"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="patientAge" className="text-sm font-medium">
-                  患者年龄
-                </Label>
-                <Input
-                  id="patientAge"
-                  type="number"
-                  value={newAppointment.patientAge}
-                  onChange={(e) => handleInputChange("patientAge", e.target.value)}
-                  placeholder="年龄"
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
             <div>
-              <Label htmlFor="condition" className="text-sm font-medium">
-                病情描述
+              <Label htmlFor="familyName" className="text-sm font-medium">
+                患者家庭
               </Label>
-              <Input
-                id="condition"
-                value={newAppointment.condition}
-                onChange={(e) => handleInputChange("condition", e.target.value)}
-                placeholder="如：高血压、糖尿病等"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="serviceType" className="text-sm font-medium">
-                服务类型
-              </Label>
-              <Select
-                value={newAppointment.serviceType}
-                onValueChange={(value) => handleInputChange("serviceType", value)}
+              <Select 
+                value={newAppointment.patient_id > 0 ? newAppointment.patient_id.toString() : ""} 
+                onValueChange={(value) => {
+                  console.log('选择的值:', value);
+                  // 如果值包含 "-"，说明是 familyId-memberIndex 格式，需要特殊处理
+                  const patientId = value.includes('-') ? 
+                    parseInt(value.split('-')[0]) : // 使用家庭ID作为临时patient_id
+                    parseInt(value);
+                    
+                  setNewAppointment(prev => ({ 
+                    ...prev, 
+                    patient_id: patientId
+                  }));
+                }}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="请选择服务类型" />
+                  <SelectValue placeholder="选择患者家庭" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="基础健康监测">基础健康监测</SelectItem>
-                  <SelectItem value="综合健康评估">综合健康评估</SelectItem>
-                  <SelectItem value="常规体检">常规体检</SelectItem>
-                  <SelectItem value="复合疾病管理">复合疾病管理</SelectItem>
-                  <SelectItem value="康复护理">康复护理</SelectItem>
-                  <SelectItem value="慢病管理">慢病管理</SelectItem>
+                  {families.map((family) => {
+                    console.log('渲染家庭:', family);
+                    // 兼容不同的数据结构：members 或 patients
+                    const members = family.members || family.patients || [];
+                    const familyName = family.householdHead || family.name || `家庭${family.id}`;
+                    
+                    return members.length > 0 ? members.map((member, index) => (
+                      <SelectItem 
+                        key={`${family.id}-${member.id || member.name || index}`} 
+                        value={member.id?.toString() || `${family.id}-${index}`}
+                      >
+                        {familyName} - {member.name} ({member.age}岁, {member.relationship})
+                      </SelectItem>
+                    )) : (
+                      <SelectItem 
+                        key={family.id} 
+                        value={family.id?.toString()}
+                        disabled
+                      >
+                        {familyName} - 暂无成员
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="address" className="text-sm font-medium">
-                服务地址
-              </Label>
-              <Input
-                id="address"
-                value={newAppointment.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                placeholder="请输入详细地址"
-                className="mt-1"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  联系电话
-                </Label>
-                <Input
-                  id="phone"
-                  value={newAppointment.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="患者联系电话"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="paymentAmount" className="text-sm font-medium">
-                  服务费用
-                </Label>
-                <Input
-                  id="paymentAmount"
-                  type="number"
-                  value={newAppointment.paymentAmount}
-                  onChange={(e) => handleInputChange("paymentAmount", e.target.value)}
-                  placeholder="费用金额"
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="notes" className="text-sm font-medium">
-                备注信息
-              </Label>
-              <Textarea
-                id="notes"
-                value={newAppointment.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
-                placeholder="特殊注意事项或备注"
-                className="mt-1 min-h-[60px]"
-              />
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -709,7 +880,7 @@ export function ScheduleManager() {
               <Button
                 className="flex-1"
                 onClick={handleCreateAppointment}
-                disabled={!newAppointment.time || !newAppointment.patientName || !newAppointment.serviceType}
+                disabled={!newAppointment.start_time || newAppointment.duration_minutes === 0 || newAppointment.patient_id === 0}
               >
                 创建预约
               </Button>

@@ -30,8 +30,17 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = SessionManager.getAccessToken()
   const needsAuth = !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')
   
+  console.log('API Request Debug:', {
+    endpoint,
+    url,
+    needsAuth,
+    token: token ? `${token.substring(0, 20)}...` : 'null',
+    hasValidToken: !!(token && token !== 'undefined' && token !== 'null')
+  })
+  
   if (needsAuth && (!token || token === 'undefined' || token === 'null')) {
     // 没有有效token，清理会话并重定向到登录页
+    console.error('API Request: No valid token, clearing session')
     SessionManager.clearSession()
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
@@ -328,4 +337,166 @@ export const withErrorHandling = async <T>(apiCall: () => Promise<T>): Promise<T
     }
     throw error
   }
+}
+
+// ========== 预约/日程 API ==========
+
+export interface ServiceType {
+  id: number
+  name: string
+  description?: string
+  default_duration?: number
+  base_price?: number
+  is_active: boolean
+  created_at?: string
+}
+
+export interface Payment {
+  id: number
+  amount: number
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded'
+  payment_method: 'wechat' | 'alipay' | 'cash' | 'bank_card' | 'other'
+  payment_date?: string
+}
+
+export interface Appointment {
+  id: number
+  patient_id: number
+  recorder_id: number
+  service_type_id?: number
+  scheduled_date: string
+  start_time: string
+  end_time?: string
+  duration_minutes?: number
+  appointment_type: 'regular' | 'makeup' | 'emergency'
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled'
+  notes?: string
+  created_at?: string
+  updated_at?: string
+  patient?: {
+    id: number
+    name: string
+    age: number
+    gender: string
+    relationship: string
+    phone?: string
+    family_id: number
+    family?: {
+      householdHead: string
+      address: string
+      phone: string
+    }
+  }
+  payment?: Payment
+}
+
+export interface CreateAppointmentRequest {
+  patient_id: number
+  service_type_id?: number
+  scheduled_date: string
+  scheduled_time: string // 后端期望的字段名
+  appointment_type?: 'regular' | 'makeup' | 'emergency'
+  status?: 'scheduled' | 'confirmed'
+  notes?: string
+  payment?: {
+    amount: number
+    payment_method: 'wechat' | 'alipay' | 'cash' | 'bank_card' | 'other'
+    payment_status?: 'pending' | 'paid'
+    notes?: string
+  }
+}
+
+export interface AppointmentListResponse {
+  code: number
+  message: string
+  data: {
+    appointments: Appointment[]
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+export interface AppointmentResponse {
+  code: number
+  message: string
+  data: Appointment
+}
+
+export interface ServiceTypesResponse {
+  code: number
+  message: string
+  data: ServiceType[]
+}
+
+// 获取今日预约列表
+export const getTodayAppointments = async (): Promise<AppointmentListResponse> => {
+  return apiRequest('/appointments/today')
+}
+
+// 获取预约列表
+export const getAppointments = async (
+  page: number = 1,
+  limit: number = 20,
+  status: string = '',
+  date_from: string = '',
+  date_to: string = ''
+): Promise<AppointmentListResponse> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+    ...(status && { status }),
+    ...(date_from && { date_from }),
+    ...(date_to && { date_to })
+  })
+  
+  return apiRequest(`/appointments?${params.toString()}`)
+}
+
+// 获取预约详情
+export const getAppointmentDetail = async (appointmentId: number): Promise<AppointmentResponse> => {
+  return apiRequest(`/appointments/${appointmentId}`)
+}
+
+// 创建预约
+export const createAppointment = async (data: CreateAppointmentRequest): Promise<AppointmentResponse> => {
+  console.log('API: 创建预约请求数据', data)
+  return apiRequest('/appointments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+// 更新预约
+export const updateAppointment = async (
+  appointmentId: number, 
+  data: Partial<CreateAppointmentRequest>
+): Promise<AppointmentResponse> => {
+  console.log('API: 更新预约请求', appointmentId, data)
+  return apiRequest(`/appointments/${appointmentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+// 删除预约
+export const deleteAppointment = async (appointmentId: number) => {
+  console.log('API: 删除预约', appointmentId)
+  return apiRequest(`/appointments/${appointmentId}`, {
+    method: 'DELETE',
+  })
+}
+
+// 完成预约
+export const completeAppointment = async (appointmentId: number): Promise<AppointmentResponse> => {
+  console.log('API: 完成预约', appointmentId)
+  return apiRequest(`/appointments/${appointmentId}/complete`, {
+    method: 'POST',
+  })
+}
+
+// 获取服务类型列表
+export const getServiceTypes = async (): Promise<ServiceTypesResponse> => {
+  return apiRequest('/service-types')
 }

@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
-    phone: "",
+    username: "",
     password: "",
   })
   const [rememberMe, setRememberMe] = useState(false)
@@ -67,7 +67,7 @@ export default function LoginPage() {
 
     try {
       // 调用后端API进行认证
-      const result = await AuthService.login(formData.phone, formData.password)
+      const result = await AuthService.login(formData.username, formData.password)
       
       if (result.success && result.user && result.tokens) {
         // 转换用户数据格式以匹配客户端需求
@@ -75,7 +75,7 @@ export default function LoginPage() {
           id: result.user.id,
           username: result.user.username,
           name: result.user.name,
-          phone: formData.phone,
+          phone: formData.username,
           workId: result.user.username, // 使用username作为workId
           role: result.user.role,
           avatar: result.user.avatar,
@@ -137,15 +137,15 @@ export default function LoginPage() {
               {/* 手机号输入 */}
               <div className="space-y-3">
                 <Label htmlFor="phone" className="text-gray-700 font-medium text-sm">
-                  手机号码
+                  用户名/手机号
                 </Label>
                 <div className="relative">
                   <Input
                     id="phone"
-                    type="tel"
-                    placeholder="请输入11位手机号码"
-                    value={formData.phone}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                    type="text"
+                    placeholder="请输入用户名或手机号"
+                    value={formData.username}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
                     className="h-12 rounded-2xl border-2 border-gray-100 focus:border-green-400 focus:ring-0 pl-4 pr-4 text-base placeholder:text-gray-400 bg-gray-50/50 transition-all duration-200"
                     required
                   />
