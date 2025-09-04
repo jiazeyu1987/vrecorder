@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("自动登录已过期，请重新登录")
         }
         
-        // 只有在不是登录页面时才重定向
-        if (pathname !== "/login") {
+        // 只有在不是登录页面且当前状态为已认证时才重定向，避免重复重定向
+        if (pathname !== "/login" && isAuthenticated) {
           router.push("/login")
         }
       }
@@ -65,8 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false)
       SessionManager.clearSession()
       
-      // 只有在不是登录页面时才重定向
-      if (pathname !== "/login") {
+      // 只有在不是登录页面且当前状态为已认证时才重定向
+      if (pathname !== "/login" && isAuthenticated) {
         router.push("/login")
       }
     }
@@ -81,21 +81,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth()
   }, []) // 移除pathname和router依赖，避免无限循环
 
-  // 单独处理路由变化
+  // 单独处理路由变化 - 只在特定情况下检查认证状态
   useEffect(() => {
     if (!isLoading) {
-      checkAuthStatus()
+      // 只在访问需要认证的页面时检查，避免在已认证页面间跳转时重复检查
+      const needsAuth = pathname !== "/login" && pathname !== "/register"
+      if (needsAuth && !isAuthenticated) {
+        checkAuthStatus()
+      }
     }
-  }, [pathname])
+  }, [pathname, isAuthenticated, isLoading])
 
   // 设置定时检查和页面可见性监听
   useEffect(() => {
-    // 设置定时检查（每3分钟检查一次）
-    const interval = setInterval(checkAuthStatus, 3 * 60 * 1000)
+    // 设置定时检查（每3分钟检查一次），只在已认证状态下定期检查
+    const interval = setInterval(() => {
+      if (isAuthenticated) {
+        checkAuthStatus()
+      }
+    }, 3 * 60 * 1000)
     
     // 监听页面可见性变化，当页面重新变为可见时检查认证状态
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !isLoading) {
+      if (document.visibilityState === 'visible' && !isLoading && isAuthenticated) {
         checkAuthStatus()
       }
     }
@@ -106,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearInterval(interval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [isLoading])
+  }, [isLoading, isAuthenticated])
 
   const login = (userData: UserData, tokens: { accessToken: string; refreshToken: string }, rememberMe: boolean = false) => {
     setUser(userData)

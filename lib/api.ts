@@ -5,9 +5,11 @@
 // API基础配置
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1'
 
+import { SessionManager } from './session-manager'
+
 // 请求头配置
 const getHeaders = () => {
-  const token = localStorage.getItem('access_token')
+  const token = SessionManager.getAccessToken()
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` })
@@ -214,11 +216,16 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     body: JSON.stringify(credentials),
   })
   
-  // 登录成功后保存token
+  // 登录成功后通过SessionManager保存token
   if (response.code === 200) {
-    localStorage.setItem('access_token', response.data.access_token)
-    localStorage.setItem('refresh_token', response.data.refresh_token)
-    localStorage.setItem('user_info', JSON.stringify(response.data.user))
+    SessionManager.createSession(
+      response.data.user,
+      {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+      },
+      false // 默认不记住登录状态，可根据需要调整
+    )
   }
   
   return response
@@ -226,7 +233,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
 
 // 刷新token
 export const refreshToken = async () => {
-  const refreshTokenValue = localStorage.getItem('refresh_token')
+  const refreshTokenValue = SessionManager.getRefreshToken()
   if (!refreshTokenValue) {
     throw new Error('No refresh token available')
   }
@@ -240,10 +247,8 @@ export const refreshToken = async () => {
   })
   
   if (!response.ok) {
-    // 刷新失败，清除本地存储的token
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user_info')
+    // 刷新失败，清除会话
+    SessionManager.clearSession()
     throw new Error('Token refresh failed')
   }
   
@@ -251,7 +256,7 @@ export const refreshToken = async () => {
   
   // 更新token
   if (data.code === 200) {
-    localStorage.setItem('access_token', data.data.access_token)
+    SessionManager.updateAccessToken(data.data.access_token)
   }
   
   return data
@@ -259,22 +264,20 @@ export const refreshToken = async () => {
 
 // 登出
 export const logout = () => {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('refresh_token')
-  localStorage.removeItem('user_info')
+  SessionManager.clearSession()
 }
 
 // ========== 工具函数 ==========
 
 // 检查是否已登录
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('access_token')
+  return SessionManager.validateSession().isValid
 }
 
 // 获取当前用户信息
 export const getCurrentUser = () => {
-  const userInfo = localStorage.getItem('user_info')
-  return userInfo ? JSON.parse(userInfo) : null
+  const session = SessionManager.getSession()
+  return session ? session.user : null
 }
 
 // 错误处理中间件

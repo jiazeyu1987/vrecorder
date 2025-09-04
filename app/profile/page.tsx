@@ -882,6 +882,7 @@ export default function ProfilePage() {
         </Dialog>
       </main>
       <BottomNavigation activeTab="profile" />
+      </div>
     </ProtectedRoute>
   )
 }
