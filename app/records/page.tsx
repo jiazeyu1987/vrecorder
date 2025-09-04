@@ -1534,6 +1534,7 @@ export default function RecordsPage() {
       </div>
 
       <BottomNavigation activeTab="records" />
+      </div>
     </ProtectedRoute>
   )
 }
