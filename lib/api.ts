@@ -30,14 +30,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = SessionManager.getAccessToken()
   const needsAuth = !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')
   
-  console.log('API Request Debug:', {
-    endpoint,
-    url,
-    needsAuth,
-    token: token ? `${token.substring(0, 20)}...` : 'null',
-    hasValidToken: !!(token && token !== 'undefined' && token !== 'null')
-  })
-  
   if (needsAuth && (!token || token === 'undefined' || token === 'null')) {
     // 没有有效token，清理会话并重定向到登录页
     console.error('API Request: No valid token, clearing session')
@@ -57,6 +49,7 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   })
   
   if (!response.ok) {
+    console.error(`❌ HTTP请求失败: ${response.status}`)
     // 如果返回401或422（未授权），清理会话并重定向
     if (response.status === 401 || response.status === 422) {
       SessionManager.clearSession()
@@ -70,7 +63,9 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     throw new Error(error.message || `HTTP ${response.status}`)
   }
   
-  return response.json()
+  const data = await response.json()
+  
+  return data
 }
 
 // ========== 家庭档案 API ==========
@@ -443,6 +438,13 @@ export const getAppointments = async (
   date_from: string = '',
   date_to: string = ''
 ): Promise<AppointmentListResponse> => {
+  console.log('🌐 API.getAppointments 调用参数:')
+  console.log('  - page:', page, typeof page)
+  console.log('  - limit:', limit, typeof limit)  
+  console.log('  - status:', `"${status}"`, typeof status)
+  console.log('  - date_from:', `"${date_from}"`, typeof date_from)
+  console.log('  - date_to:', `"${date_to}"`, typeof date_to)
+  
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
@@ -451,7 +453,20 @@ export const getAppointments = async (
     ...(date_to && { date_to })
   })
   
-  return apiRequest(`/appointments?${params.toString()}`)
+  const url = `/appointments?${params.toString()}`
+  console.log('🌐 最终请求URL:', url)
+  
+  const result = await apiRequest(url)
+  
+  console.log(`📥 获取预约结果: ${result.data?.appointments?.length || 0}条`)
+  if (result.data?.appointments?.length > 0) {
+    console.log('📥 预约详情:')
+    result.data.appointments.forEach((appt: any, index: number) => {
+      console.log(`  ${index + 1}. ${appt.patient?.name} - ${appt.scheduled_date}`)
+    })
+  }
+  
+  return result
 }
 
 // 获取预约详情

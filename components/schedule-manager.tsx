@@ -45,8 +45,29 @@ import {
 
 // 移除模拟数据，使用真实API数据
 
+// 工具函数：获取北京时间的日期字符串 (YYYY-MM-DD)
+const getBeijingDateString = (date: Date): string => {
+  // 创建一个新的Date对象，避免修改原对象
+  const beijingDate = new Date(date.getTime())
+  
+  // 获取北京时间的年月日 (避免时区转换问题)
+  const year = beijingDate.getFullYear()
+  const month = String(beijingDate.getMonth() + 1).padStart(2, '0')
+  const day = String(beijingDate.getDate()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}`
+}
+
+// 工具函数：获取北京时间的今天
+const getBeijingToday = (): Date => {
+  return new Date()
+}
+
 export function ScheduleManager() {
-  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // 获取北京时间的今天
+    return getBeijingToday()
+  })
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false)
   const [showEditAppointmentModal, setShowEditAppointmentModal] = useState(false)
@@ -57,10 +78,10 @@ export function ScheduleManager() {
   const isMobile = useIsMobile()
   // 获取当前时间，并设置默认时间为一小时后
   const getDefaultDateTime = () => {
-    const now = new Date()
+    const now = getBeijingToday()
     const defaultTime = new Date(now.getTime() + 60 * 60 * 1000) // 一小时后
     return {
-      date: now.toISOString().split('T')[0],
+      date: getBeijingDateString(now),
       time: defaultTime.toTimeString().slice(0, 5) // HH:MM格式
     }
   }
@@ -85,14 +106,8 @@ export function ScheduleManager() {
   // 加载数据
   useEffect(() => {
     loadInitialData()
+    loadAppointmentsByDate()
   }, [])
-
-  // 当日期改变时，重新加载预约数据
-  useEffect(() => {
-    if (selectedDate) {
-      loadAppointmentsByDate()
-    }
-  }, [selectedDate])
 
   const loadInitialData = async () => {
     try {
@@ -123,16 +138,35 @@ export function ScheduleManager() {
     }
   }
 
-  const loadAppointmentsByDate = async () => {
+  const loadAppointmentsByDate = async (dateToUse?: Date) => {
     try {
       setLoading(true)
-      console.log('ScheduleManager: 加载指定日期的预约', selectedDate.toISOString().split('T')[0])
       
-      const dateStr = selectedDate.toISOString().split('T')[0]
-      const response = await getAppointments(1, 100, '', dateStr, dateStr)
+      // 使用传入的日期或当前选择的日期
+      const targetDate = dateToUse || selectedDate
+      const selectedDateStr = getBeijingDateString(targetDate)
+      const todayStr = getBeijingDateString(getBeijingToday())
       
-      console.log('ScheduleManager: 加载预约数据成功', response.data)
-      setAppointments(response.data.appointments)
+      console.log('📅 加载预约数据 (使用北京时间)')
+      console.log('  - 目标日期对象:', targetDate)
+      console.log('  - 目标日期字符串 (北京时间):', selectedDateStr)
+      console.log('  - 今天日期对象:', getBeijingToday())
+      console.log('  - 今天字符串 (北京时间):', todayStr)
+      console.log('  - 日期字符串比较 selectedDateStr === todayStr:', selectedDateStr === todayStr)
+      
+      // 如果选择的是今天，使用今日预约API
+      if (selectedDateStr === todayStr) {
+        console.log('ScheduleManager: 使用今日预约API')
+        const response = await getTodayAppointments()
+        console.log('ScheduleManager: 今日预约数量', response.data?.length || 0)
+        setAppointments(response.data || [])
+      } else {
+        // 如果选择的不是今天，使用日期范围查询
+        console.log('ScheduleManager: 使用日期范围查询，日期:', selectedDateStr)
+        const response = await getAppointments(1, 100, '', selectedDateStr, selectedDateStr)
+        console.log('ScheduleManager: 指定日期预约数量', response.data.appointments?.length || 0)
+        setAppointments(response.data.appointments || [])
+      }
     } catch (error) {
       console.error('ScheduleManager: 加载预约数据失败', error)
       toast.error('加载预约数据失败')
@@ -232,9 +266,25 @@ export function ScheduleManager() {
   }
 
   const navigateDate = (direction: "prev" | "next") => {
+    console.log('🔄 navigateDate - 开始导航 (使用北京时间)')
+    console.log('  - 方向:', direction)
+    console.log('  - 当前selectedDate:', selectedDate)
+    console.log('  - 当前selectedDate字符串 (北京时间):', getBeijingDateString(selectedDate))
+    
     const newDate = new Date(selectedDate)
     newDate.setDate(selectedDate.getDate() + (direction === "next" ? 1 : -1))
+    
+    console.log('  - 新计算的日期:', newDate)
+    console.log('  - 新计算的日期字符串 (北京时间):', getBeijingDateString(newDate))
+    
+    // 🔥 强制清空预约列表，避免显示缓存数据
+    console.log('🔄 navigateDate - 先清空预约列表，避免显示旧数据')
+    setAppointments([])
+    
     setSelectedDate(newDate)
+    
+    console.log('🔄 navigateDate - 直接使用新日期调用loadAppointmentsByDate')
+    loadAppointmentsByDate(newDate) // 直接传递新日期，不依赖状态更新
   }
 
   // 验证预约时间是否在未来
@@ -296,8 +346,34 @@ export function ScheduleManager() {
         }
       })
       
-      // 重新加载预约数据
-      loadAppointmentsByDate()
+      // 强制刷新预约列表
+      console.log('ScheduleManager: 预约创建成功，强制刷新列表')
+      
+      // 如果创建的预约不是当前选择的日期，切换到预约的日期
+      const appointmentDate = new Date(appointmentData.scheduled_date)
+      const currentSelectedDate = selectedDate.toISOString().split('T')[0]
+      
+      console.log('ScheduleManager: 预约创建日期', appointmentData.scheduled_date)
+      console.log('ScheduleManager: 当前选择日期', currentSelectedDate)
+      
+      if (appointmentData.scheduled_date !== currentSelectedDate) {
+        console.log('ScheduleManager: 切换到预约日期')
+        setSelectedDate(appointmentDate)
+        await loadAppointmentsByDate(appointmentDate)
+      } else {
+        console.log('ScheduleManager: 在当前日期，重新加载预约数据')
+        // 重新加载预约数据
+        await loadAppointmentsByDate()
+      }
+      
+      // 备用：尝试加载所有预约来验证预约是否真的创建了
+      try {
+        console.log('ScheduleManager: 备用验证 - 获取所有预约')
+        const allAppointmentsResponse = await getAppointments(1, 100, '', '', '')
+        console.log('ScheduleManager: 所有预约', allAppointmentsResponse.data.appointments)
+      } catch (error) {
+        console.error('ScheduleManager: 获取所有预约失败', error)
+      }
       
     } catch (error) {
       console.error('ScheduleManager: 创建预约失败', error)
@@ -589,7 +665,9 @@ export function ScheduleManager() {
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <div className="text-center">
-                <p className="font-semibold text-lg text-gray-800">{formatDate(selectedDate)}</p>
+                <p className="font-semibold text-lg text-gray-800">
+                  {formatDate(selectedDate)}
+                </p>
               </div>
               <Button 
                 variant="ghost" 
