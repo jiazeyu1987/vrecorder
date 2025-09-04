@@ -4,18 +4,12 @@ import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { SessionManager } from "@/lib/session-manager"
-
-interface User {
-  name: string
-  phone: string
-  workId: string
-}
+import { SessionManager, UserData } from "@/lib/session-manager"
 
 interface AuthContextType {
-  user: User | null
+  user: UserData | null
   isAuthenticated: boolean
-  login: (user: User, rememberMe?: boolean) => void
+  login: (user: UserData, tokens: { accessToken: string; refreshToken: string }, rememberMe?: boolean) => void
   logout: () => void
   isLoading: boolean
   checkAuthStatus: () => Promise<void>
@@ -24,7 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserData | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -114,12 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading])
 
-  const login = (userData: User, rememberMe: boolean = false) => {
+  const login = (userData: UserData, tokens: { accessToken: string; refreshToken: string }, rememberMe: boolean = false) => {
     setUser(userData)
     setIsAuthenticated(true)
     
     // 使用SessionManager创建会话
-    SessionManager.createSession(userData, rememberMe)
+    SessionManager.createSession(userData, tokens, rememberMe)
   }
 
   const logout = () => {

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Eye, EyeOff, Heart, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/components/auth-provider"
+import { AuthService } from "@/app/api/auth"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -65,23 +66,31 @@ export default function LoginPage() {
     setError("")
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      if (formData.phone === "13800001234" && formData.password === "123456") {
+      // 调用后端API进行认证
+      const result = await AuthService.login(formData.phone, formData.password)
+      
+      if (result.success && result.user && result.tokens) {
+        // 转换用户数据格式以匹配客户端需求
         const userData = {
-          name: "张医生",
+          id: result.user.id,
+          username: result.user.username,
+          name: result.user.name,
           phone: formData.phone,
-          workId: "HC001234",
+          workId: result.user.username, // 使用username作为workId
+          role: result.user.role,
+          avatar: result.user.avatar,
+          status: result.user.status,
+          created_at: result.user.created_at,
         }
         
         // 使用AuthProvider的login方法，并传递记住我选项
-        login(userData, rememberMe)
+        login(userData, result.tokens, rememberMe)
         router.push("/")
       } else {
-        setError("手机号或密码错误")
+        setError(result.error || "登录失败")
       }
     } catch (err) {
-      setError("登录失败，请重试")
+      setError("网络错误，请检查网络连接")
     } finally {
       setIsLoading(false)
     }
@@ -214,15 +223,19 @@ export default function LoginPage() {
             {/* 测试账号信息 */}
             <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl border border-blue-100">
               <div className="text-center space-y-1">
-                <p className="text-xs text-gray-500 mb-2">📱 体验账号</p>
+                <p className="text-xs text-gray-500 mb-2">📱 测试账号</p>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">手机号:</span>
-                    <span className="font-medium text-gray-800 font-mono">13800001234</span>
+                    <span className="text-gray-600">管理员:</span>
+                    <span className="font-medium text-gray-800 font-mono">admin / admin123</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">密码:</span>
-                    <span className="font-medium text-gray-800 font-mono">123456</span>
+                    <span className="text-gray-600">记录员:</span>
+                    <span className="font-medium text-gray-800 font-mono">recorder002 / recorder123</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">医生:</span>
+                    <span className="font-medium text-gray-800 font-mono">doctor001 / doctor123</span>
                   </div>
                 </div>
               </div>

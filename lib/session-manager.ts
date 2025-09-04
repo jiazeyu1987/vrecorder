@@ -3,15 +3,25 @@
  * 处理用户会话的创建、验证和清理
  */
 
+export interface UserData {
+  id: number;
+  username: string;
+  name: string;
+  phone: string;
+  workId: string;
+  role: string;
+  avatar?: string;
+  status: string;
+  created_at: string;
+}
+
 export interface SessionData {
-  user: {
-    name: string
-    phone: string
-    workId: string
-  }
-  loginTime: number
-  sessionExpiry: number
-  rememberMe: boolean
+  user: UserData;
+  loginTime: number;
+  sessionExpiry: number;
+  rememberMe: boolean;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export class SessionManager {
@@ -23,12 +33,14 @@ export class SessionManager {
     LOGIN_TIME: "loginTime",
     SESSION_EXPIRY: "sessionExpiry",
     REMEMBER_ME: "rememberMe",
+    ACCESS_TOKEN: "accessToken",
+    REFRESH_TOKEN: "refreshToken",
   }
 
   /**
    * 创建新的会话
    */
-  static createSession(user: SessionData["user"], rememberMe: boolean = false): void {
+  static createSession(user: UserData, tokens: { accessToken: string; refreshToken: string }, rememberMe: boolean = false): void {
     const now = Date.now()
     const sessionExpiry = now + SessionManager.SESSION_DURATION
 
@@ -37,6 +49,8 @@ export class SessionManager {
     localStorage.setItem(SessionManager.STORAGE_KEYS.LOGIN_TIME, now.toString())
     localStorage.setItem(SessionManager.STORAGE_KEYS.SESSION_EXPIRY, sessionExpiry.toString())
     localStorage.setItem(SessionManager.STORAGE_KEYS.REMEMBER_ME, rememberMe.toString())
+    localStorage.setItem(SessionManager.STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken)
+    localStorage.setItem(SessionManager.STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken)
     
     if (process.env.NODE_ENV === 'development') {
       console.log('🔐 会话已创建:', {
@@ -58,8 +72,10 @@ export class SessionManager {
       const loginTime = localStorage.getItem(SessionManager.STORAGE_KEYS.LOGIN_TIME)
       const sessionExpiry = localStorage.getItem(SessionManager.STORAGE_KEYS.SESSION_EXPIRY)
       const rememberMe = localStorage.getItem(SessionManager.STORAGE_KEYS.REMEMBER_ME)
+      const accessToken = localStorage.getItem(SessionManager.STORAGE_KEYS.ACCESS_TOKEN)
+      const refreshToken = localStorage.getItem(SessionManager.STORAGE_KEYS.REFRESH_TOKEN)
 
-      if (!isAuthenticated || !userInfo || !loginTime || !sessionExpiry) {
+      if (!isAuthenticated || !userInfo || !loginTime || !sessionExpiry || !accessToken || !refreshToken) {
         return null
       }
 
@@ -68,11 +84,38 @@ export class SessionManager {
         loginTime: parseInt(loginTime),
         sessionExpiry: parseInt(sessionExpiry),
         rememberMe: rememberMe === "true",
+        accessToken,
+        refreshToken,
       }
     } catch (error) {
       console.error("获取会话数据失败:", error)
       return null
     }
+  }
+
+  /**
+   * 获取访问令牌
+   */
+  static getAccessToken(): string | null {
+    return localStorage.getItem(SessionManager.STORAGE_KEYS.ACCESS_TOKEN)
+  }
+
+  /**
+   * 获取刷新令牌
+   */
+  static getRefreshToken(): string | null {
+    return localStorage.getItem(SessionManager.STORAGE_KEYS.REFRESH_TOKEN)
+  }
+
+  /**
+   * 更新访问令牌
+   */
+  static updateAccessToken(newToken: string): void {
+    localStorage.setItem(SessionManager.STORAGE_KEYS.ACCESS_TOKEN, newToken)
+    
+    // 同时更新会话过期时间
+    const newExpiry = Date.now() + SessionManager.SESSION_DURATION
+    localStorage.setItem(SessionManager.STORAGE_KEYS.SESSION_EXPIRY, newExpiry.toString())
   }
 
   /**
