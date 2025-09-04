@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import {
   User,
   Settings,
@@ -34,11 +35,16 @@ import {
   MessageSquare,
   FileText,
   AlertCircle,
+  Clock,
+  MessageCircle,
+  CreditCard,
+  RefreshCw,
 } from "lucide-react"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
   const isMobile = useIsMobile()
+  const deviceType = useDeviceType()
 
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAccountSettings, setShowAccountSettings] = useState(false)
@@ -307,255 +313,566 @@ export default function ProfilePage() {
         </Button>
 
         <Dialog open={showAccountSettings} onOpenChange={setShowAccountSettings}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>账户设置</DialogTitle>
+          <DialogContent className={`
+            bg-white/98 backdrop-blur-xl border-0 shadow-2xl shadow-black/10
+            ${deviceType === "mobile" ? "max-w-[95vw] mx-4 rounded-3xl" : "max-w-md rounded-2xl"}
+          `}>
+            <DialogHeader className={`border-b border-gray-100/50 ${deviceType === "mobile" ? "pb-4 mb-6" : "pb-3 mb-5"}`}>
+              <DialogTitle className={`flex items-center gap-3 ${deviceType === "mobile" ? "text-xl" : "text-lg"}`}>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800">账户设置</span>
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">当前密码</Label>
-                <div className="relative">
-                  <Input id="current-password" type={showPassword ? "text" : "password"} placeholder="请输入当前密码" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+            <div className="space-y-6">
+              {/* 密码修改区域 */}
+              <div className="space-y-4">
+                <h4 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Lock className="h-3 w-3 text-orange-600" />
+                  </div>
+                  密码修改
+                </h4>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password" className="text-sm font-medium text-gray-700">当前密码</Label>
+                    <div className="relative">
+                      <Input 
+                        id="current-password" 
+                        type={showPassword ? "text" : "password"} 
+                        placeholder="请输入当前密码" 
+                        className="rounded-xl border-gray-200/60 bg-gray-50/50 focus:bg-white transition-colors duration-200"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password" className="text-sm font-medium text-gray-700">新密码</Label>
+                    <Input 
+                      id="new-password" 
+                      type="password" 
+                      placeholder="请输入新密码" 
+                      className="rounded-xl border-gray-200/60 bg-gray-50/50 focus:bg-white transition-colors duration-200"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password" className="text-sm font-medium text-gray-700">确认新密码</Label>
+                    <Input 
+                      id="confirm-password" 
+                      type="password" 
+                      placeholder="请再次输入新密码" 
+                      className="rounded-xl border-gray-200/60 bg-gray-50/50 focus:bg-white transition-colors duration-200"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">新密码</Label>
-                <Input id="new-password" type="password" placeholder="请输入新密码" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">确认新密码</Label>
-                <Input id="confirm-password" type="password" placeholder="请再次输入新密码" />
-              </div>
-              <Separator />
-              <div className="space-y-3">
-                <h4 className="font-medium">账户安全</h4>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">双重验证</span>
-                  <Switch />
+              
+              {/* 账户安全 */}
+              <div className="bg-gradient-to-r from-gray-50/80 to-blue-50/40 rounded-2xl p-4 border border-gray-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Shield className="h-3 w-3 text-green-600" />
+                  </div>
+                  账户安全
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100/70 rounded-xl flex items-center justify-center">
+                        <Lock className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-800">双重验证</span>
+                        <p className="text-xs text-gray-600">提升账户安全性</p>
+                      </div>
+                    </div>
+                    <Switch className="data-[state=checked]:bg-blue-500" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100/70 rounded-xl flex items-center justify-center">
+                        <Bell className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-800">登录提醒</span>
+                        <p className="text-xs text-gray-600">异地登录时通知</p>
+                      </div>
+                    </div>
+                    <Switch defaultChecked className="data-[state=checked]:bg-green-500" />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">登录提醒</span>
-                  <Switch defaultChecked />
-                </div>
               </div>
-              <div className="flex gap-2">
+              
+              {/* 底部按钮组 */}
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
-                  className="flex-1 bg-transparent"
+                  className={`flex-1 rounded-xl border-gray-200/60 bg-gray-50/50 hover:bg-gray-100/60 text-gray-700 font-medium
+                    ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}
                   onClick={() => setShowAccountSettings(false)}
                 >
                   取消
                 </Button>
-                <Button className="flex-1">保存设置</Button>
+                <Button className={`flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 
+                  shadow-lg shadow-blue-500/25 font-medium
+                  ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}>
+                  保存设置
+                </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={showNotificationSettings} onOpenChange={setShowNotificationSettings}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>消息通知</DialogTitle>
+          <DialogContent className={`
+            bg-white/98 backdrop-blur-xl border-0 shadow-2xl shadow-black/10
+            ${deviceType === "mobile" ? "max-w-[95vw] mx-4 rounded-3xl" : "max-w-md rounded-2xl"}
+          `}>
+            <DialogHeader className={`border-b border-gray-100/50 ${deviceType === "mobile" ? "pb-4 mb-6" : "pb-3 mb-5"}`}>
+              <DialogTitle className={`flex items-center gap-3 ${deviceType === "mobile" ? "text-xl" : "text-lg"}`}>
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                  <Bell className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800">消息通知</span>
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">预约提醒</div>
-                    <div className="text-xs text-muted-foreground">服务前30分钟提醒</div>
+            <div className="space-y-5">
+              {/* 服务相关通知 */}
+              <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/40 rounded-2xl p-4 border border-blue-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="h-3 w-3 text-blue-600" />
                   </div>
-                  <Switch
-                    checked={notificationSettings.appointmentReminders}
-                    onCheckedChange={(checked) =>
-                      setNotificationSettings((prev) => ({ ...prev, appointmentReminders: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">支付通知</div>
-                    <div className="text-xs text-muted-foreground">收款和退款提醒</div>
+                  服务相关
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-100/70 rounded-xl flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">预约提醒</div>
+                        <div className="text-xs text-gray-600">服务前30分钟提醒</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.appointmentReminders}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({ ...prev, appointmentReminders: checked }))
+                      }
+                      className="data-[state=checked]:bg-orange-500"
+                    />
                   </div>
-                  <Switch
-                    checked={notificationSettings.paymentNotifications}
-                    onCheckedChange={(checked) =>
-                      setNotificationSettings((prev) => ({ ...prev, paymentNotifications: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">系统更新</div>
-                    <div className="text-xs text-muted-foreground">应用更新和维护通知</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-100/70 rounded-xl flex items-center justify-center">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">紧急提醒</div>
+                        <div className="text-xs text-gray-600">紧急预约和重要通知</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.emergencyAlerts}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({ ...prev, emergencyAlerts: checked }))
+                      }
+                      className="data-[state=checked]:bg-red-500"
+                    />
                   </div>
-                  <Switch
-                    checked={notificationSettings.systemUpdates}
-                    onCheckedChange={(checked) =>
-                      setNotificationSettings((prev) => ({ ...prev, systemUpdates: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">紧急提醒</div>
-                    <div className="text-xs text-muted-foreground">紧急预约和重要通知</div>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.emergencyAlerts}
-                    onCheckedChange={(checked) =>
-                      setNotificationSettings((prev) => ({ ...prev, emergencyAlerts: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">患者消息</div>
-                    <div className="text-xs text-muted-foreground">患者发送的消息提醒</div>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.patientMessages}
-                    onCheckedChange={(checked) =>
-                      setNotificationSettings((prev) => ({ ...prev, patientMessages: checked }))
-                    }
-                  />
                 </div>
               </div>
-              <div className="flex gap-2">
+              
+              {/* 支付和消息通知 */}
+              <div className="bg-gradient-to-r from-green-50/80 to-emerald-50/40 rounded-2xl p-4 border border-green-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-100 rounded-lg flex items-center justify-center">
+                    <MessageSquare className="h-3 w-3 text-green-600" />
+                  </div>
+                  支付和消息
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100/70 rounded-xl flex items-center justify-center">
+                        <MessageCircle className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">患者消息</div>
+                        <div className="text-xs text-gray-600">患者发送的消息提醒</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.patientMessages}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({ ...prev, patientMessages: checked }))
+                      }
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100/70 rounded-xl flex items-center justify-center">
+                        <CreditCard className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">支付通知</div>
+                        <div className="text-xs text-gray-600">收款和退款提醒</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.paymentNotifications}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({ ...prev, paymentNotifications: checked }))
+                      }
+                      className="data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* 系统通知 */}
+              <div className="bg-gradient-to-r from-purple-50/80 to-pink-50/40 rounded-2xl p-4 border border-purple-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Settings className="h-3 w-3 text-purple-600" />
+                  </div>
+                  系统通知
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-100/70 rounded-xl flex items-center justify-center">
+                        <RefreshCw className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">系统更新</div>
+                        <div className="text-xs text-gray-600">应用更新和维护通知</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={notificationSettings.systemUpdates}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings((prev) => ({ ...prev, systemUpdates: checked }))
+                      }
+                      className="data-[state=checked]:bg-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* 底部按钮组 */}
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
-                  className="flex-1 bg-transparent"
+                  className={`flex-1 rounded-xl border-gray-200/60 bg-gray-50/50 hover:bg-gray-100/60 text-gray-700 font-medium
+                    ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}
                   onClick={() => setShowNotificationSettings(false)}
                 >
                   取消
                 </Button>
-                <Button className="flex-1">保存设置</Button>
+                <Button className={`flex-1 rounded-xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 
+                  shadow-lg shadow-green-500/25 font-medium
+                  ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}>
+                  保存设置
+                </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={showPrivacySettings} onOpenChange={setShowPrivacySettings}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>隐私安全</DialogTitle>
+          <DialogContent className={`
+            bg-white/98 backdrop-blur-xl border-0 shadow-2xl shadow-black/10
+            ${deviceType === "mobile" ? "max-w-[95vw] mx-4 rounded-3xl" : "max-w-md rounded-2xl"}
+          `}>
+            <DialogHeader className={`border-b border-gray-100/50 ${deviceType === "mobile" ? "pb-4 mb-6" : "pb-3 mb-5"}`}>
+              <DialogTitle className={`flex items-center gap-3 ${deviceType === "mobile" ? "text-xl" : "text-lg"}`}>
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800">隐私安全</span>
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">个人资料可见性</div>
-                    <div className="text-xs text-muted-foreground">允许患者查看基本信息</div>
+            <div className="space-y-5">
+              {/* 个人信息设置 */}
+              <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/40 rounded-2xl p-4 border border-blue-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <User className="h-3 w-3 text-blue-600" />
                   </div>
-                  <Switch
-                    checked={privacySettings.profileVisibility}
-                    onCheckedChange={(checked) =>
-                      setPrivacySettings((prev) => ({ ...prev, profileVisibility: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">位置共享</div>
-                    <div className="text-xs text-muted-foreground">服务时共享实时位置</div>
+                  个人信息
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-100/70 rounded-xl flex items-center justify-center">
+                        <Eye className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">个人资料可见性</div>
+                        <div className="text-xs text-gray-600">允许患者查看基本信息</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacySettings.profileVisibility}
+                      onCheckedChange={(checked) =>
+                        setPrivacySettings((prev) => ({ ...prev, profileVisibility: checked }))
+                      }
+                      className="data-[state=checked]:bg-blue-500"
+                    />
                   </div>
-                  <Switch
-                    checked={privacySettings.locationSharing}
-                    onCheckedChange={(checked) => setPrivacySettings((prev) => ({ ...prev, locationSharing: checked }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">数据分析</div>
-                    <div className="text-xs text-muted-foreground">帮助改善服务质量</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100/70 rounded-xl flex items-center justify-center">
+                        <MapPin className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">位置共享</div>
+                        <div className="text-xs text-gray-600">服务时共享实时位置</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacySettings.locationSharing}
+                      onCheckedChange={(checked) => setPrivacySettings((prev) => ({ ...prev, locationSharing: checked }))}
+                      className="data-[state=checked]:bg-green-500"
+                    />
                   </div>
-                  <Switch
-                    checked={privacySettings.dataAnalytics}
-                    onCheckedChange={(checked) => setPrivacySettings((prev) => ({ ...prev, dataAnalytics: checked }))}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">第三方共享</div>
-                    <div className="text-xs text-muted-foreground">与合作医疗机构共享</div>
-                  </div>
-                  <Switch
-                    checked={privacySettings.thirdPartySharing}
-                    onCheckedChange={(checked) =>
-                      setPrivacySettings((prev) => ({ ...prev, thirdPartySharing: checked }))
-                    }
-                  />
                 </div>
               </div>
-              <Separator />
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full bg-transparent">
-                  <Lock className="h-4 w-4 mr-2" />
-                  数据导出
-                </Button>
-                <Button variant="outline" className="w-full bg-transparent text-red-600 border-red-300">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  删除账户
-                </Button>
+              
+              {/* 数据使用设置 */}
+              <div className="bg-gradient-to-r from-purple-50/80 to-pink-50/40 rounded-2xl p-4 border border-purple-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Settings className="h-3 w-3 text-purple-600" />
+                  </div>
+                  数据使用
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-purple-100/70 rounded-xl flex items-center justify-center">
+                        <FileText className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">数据分析</div>
+                        <div className="text-xs text-gray-600">帮助改善服务质量</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacySettings.dataAnalytics}
+                      onCheckedChange={(checked) => setPrivacySettings((prev) => ({ ...prev, dataAnalytics: checked }))}
+                      className="data-[state=checked]:bg-purple-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-100/70 rounded-xl flex items-center justify-center">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">第三方共享</div>
+                        <div className="text-xs text-gray-600">与合作医疗机构共享</div>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacySettings.thirdPartySharing}
+                      onCheckedChange={(checked) =>
+                        setPrivacySettings((prev) => ({ ...prev, thirdPartySharing: checked }))
+                      }
+                      className="data-[state=checked]:bg-orange-500"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2">
+              
+              {/* 账户操作 */}
+              <div className="bg-gradient-to-r from-gray-50/80 to-slate-50/40 rounded-2xl p-4 border border-gray-100/50">
+                <h4 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Lock className="h-3 w-3 text-gray-600" />
+                  </div>
+                  账户操作
+                </h4>
+                <div className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start rounded-xl border-gray-200/60 bg-white/70 hover:bg-gray-50/80 text-gray-700 transition-all duration-200 active:scale-95"
+                  >
+                    <Lock className="h-4 w-4 mr-3 text-gray-600" />
+                    <div className="text-left">
+                      <div className="font-medium">数据导出</div>
+                      <div className="text-xs text-gray-500">下载个人数据副本</div>
+                    </div>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start rounded-xl border-red-200/60 bg-red-50/40 hover:bg-red-50/60 text-red-600 transition-all duration-200 active:scale-95"
+                  >
+                    <AlertCircle className="h-4 w-4 mr-3 text-red-600" />
+                    <div className="text-left">
+                      <div className="font-medium">删除账户</div>
+                      <div className="text-xs text-red-500">永久删除所有数据</div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+              
+              {/* 底部按钮组 */}
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
-                  className="flex-1 bg-transparent"
+                  className={`flex-1 rounded-xl border-gray-200/60 bg-gray-50/50 hover:bg-gray-100/60 text-gray-700 font-medium
+                    ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}
                   onClick={() => setShowPrivacySettings(false)}
                 >
                   取消
                 </Button>
-                <Button className="flex-1">保存设置</Button>
+                <Button className={`flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 
+                  shadow-lg shadow-orange-500/25 font-medium
+                  ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}>
+                  保存设置
+                </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={showHelpCenter} onOpenChange={setShowHelpCenter}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>帮助中心</DialogTitle>
+          <DialogContent className={`
+            bg-white/98 backdrop-blur-xl border-0 shadow-2xl shadow-black/10
+            ${deviceType === "mobile" ? "max-w-[95vw] mx-4 rounded-3xl" : "max-w-md rounded-2xl"}
+          `}>
+            <DialogHeader className={`border-b border-gray-100/50 ${deviceType === "mobile" ? "pb-4 mb-6" : "pb-3 mb-5"}`}>
+              <DialogTitle className={`flex items-center gap-3 ${deviceType === "mobile" ? "text-xl" : "text-lg"}`}>
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <HelpCircle className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800">帮助中心</span>
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-3">
-              <Button variant="ghost" className="w-full justify-start p-3 h-auto bg-transparent">
-                <MessageSquare className="h-4 w-4 mr-3 text-muted-foreground" />
-                <div className="text-left">
-                  <div className="font-medium">常见问题</div>
-                  <div className="text-xs text-muted-foreground">查看常见问题解答</div>
+            <div className="space-y-4">
+              {/* 帮助选项列表 */}
+              <div className="space-y-3">
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 
+                    hover:from-blue-100/60 hover:to-indigo-100/40 border border-blue-100/50 transition-all duration-200 active:scale-95
+                    ${deviceType === "mobile" ? "p-4 h-auto" : "p-3 h-auto"}`}
+                >
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="w-10 h-10 bg-blue-100/70 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-800">常见问题</div>
+                      <div className="text-xs text-gray-600 mt-1">查看常见问题解答</div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start rounded-2xl bg-gradient-to-r from-green-50/60 to-emerald-50/40 
+                    hover:from-green-100/60 hover:to-emerald-100/40 border border-green-100/50 transition-all duration-200 active:scale-95
+                    ${deviceType === "mobile" ? "p-4 h-auto" : "p-3 h-auto"}`}
+                >
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="w-10 h-10 bg-green-100/70 rounded-xl flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-800">使用指南</div>
+                      <div className="text-xs text-gray-600 mt-1">详细的功能使用说明</div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start rounded-2xl bg-gradient-to-r from-orange-50/60 to-amber-50/40 
+                    hover:from-orange-100/60 hover:to-amber-100/40 border border-orange-100/50 transition-all duration-200 active:scale-95
+                    ${deviceType === "mobile" ? "p-4 h-auto" : "p-3 h-auto"}`}
+                >
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="w-10 h-10 bg-orange-100/70 rounded-xl flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-800">联系客服</div>
+                      <div className="text-xs text-gray-600 mt-1">400-123-4567</div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  className={`w-full justify-start rounded-2xl bg-gradient-to-r from-purple-50/60 to-pink-50/40 
+                    hover:from-purple-100/60 hover:to-pink-100/40 border border-purple-100/50 transition-all duration-200 active:scale-95
+                    ${deviceType === "mobile" ? "p-4 h-auto" : "p-3 h-auto"}`}
+                >
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="w-10 h-10 bg-purple-100/70 rounded-xl flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-800">意见反馈</div>
+                      <div className="text-xs text-gray-600 mt-1">help@healthcare.com</div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </div>
+                </Button>
+              </div>
+              
+              {/* 分割线 */}
+              <div className="flex items-center gap-4 my-6">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+                <div className="text-xs text-gray-400 font-medium">系统信息</div>
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+              </div>
+              
+              {/* 系统信息 */}
+              <div className="bg-gradient-to-r from-gray-50/60 to-slate-50/40 rounded-2xl p-4 border border-gray-100/50">
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-6 h-6 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <Settings className="h-3 w-3 text-gray-600" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">健康记录员 v1.2.0</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+                    <button className="hover:text-blue-600 transition-colors duration-200 underline-offset-2 hover:underline">
+                      服务条款
+                    </button>
+                    <span>|</span>
+                    <button className="hover:text-blue-600 transition-colors duration-200 underline-offset-2 hover:underline">
+                      隐私政策
+                    </button>
+                  </div>
                 </div>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start p-3 h-auto bg-transparent">
-                <FileText className="h-4 w-4 mr-3 text-muted-foreground" />
-                <div className="text-left">
-                  <div className="font-medium">使用指南</div>
-                  <div className="text-xs text-muted-foreground">详细的功能使用说明</div>
-                </div>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start p-3 h-auto bg-transparent">
-                <Phone className="h-4 w-4 mr-3 text-muted-foreground" />
-                <div className="text-left">
-                  <div className="font-medium">联系客服</div>
-                  <div className="text-xs text-muted-foreground">400-123-4567</div>
-                </div>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start p-3 h-auto bg-transparent">
-                <Mail className="h-4 w-4 mr-3 text-muted-foreground" />
-                <div className="text-left">
-                  <div className="font-medium">意见反馈</div>
-                  <div className="text-xs text-muted-foreground">help@healthcare.com</div>
-                </div>
-              </Button>
-              <Separator />
-              <div className="text-center text-xs text-muted-foreground py-2">版本 1.2.0 | 服务条款 | 隐私政策</div>
-              <Button variant="outline" className="w-full bg-transparent" onClick={() => setShowHelpCenter(false)}>
+              </div>
+              
+              {/* 关闭按钮 */}
+              <Button 
+                variant="outline" 
+                className={`w-full rounded-xl border-gray-200/60 bg-gray-50/50 hover:bg-gray-100/60 text-gray-700 font-medium
+                  ${deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"} transition-all duration-200 active:scale-95`}
+                onClick={() => setShowHelpCenter(false)}
+              >
                 关闭
               </Button>
             </div>
