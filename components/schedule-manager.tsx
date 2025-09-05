@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,6 +43,7 @@ import {
   Plus,
   Edit,
   X,
+  FileText,
 } from "lucide-react"
 
 // 使用从 API 导入的 Appointment 接口
@@ -67,6 +69,7 @@ const getBeijingToday = (): Date => {
 }
 
 export function ScheduleManager() {
+  const router = useRouter()
   const [selectedDate, setSelectedDate] = useState(() => {
     // 获取北京时间的今天
     return getBeijingToday()
@@ -85,6 +88,8 @@ export function ScheduleManager() {
   const [rescheduleTime, setRescheduleTime] = useState("")
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false)
   const [cancelAppointment, setCancelAppointment] = useState<Appointment | null>(null)
+  const [showStartConfirmModal, setShowStartConfirmModal] = useState(false)
+  const [startAppointment, setStartAppointment] = useState<Appointment | null>(null)
   const isMobile = useIsMobile()
   // 获取当前时间，并设置默认时间为一小时后
   const getDefaultDateTime = () => {
@@ -154,28 +159,45 @@ export function ScheduleManager() {
       const selectedDateStr = getBeijingDateString(targetDate)
       const todayStr = getBeijingDateString(getBeijingToday())
       
-      console.log('📅 加载预约数据 (使用北京时间)')
-      console.log('  - 目标日期对象:', targetDate)
-      console.log('  - 目标日期字符串 (北京时间):', selectedDateStr)
-      console.log('  - 今天日期对象:', getBeijingToday())
-      console.log('  - 今天字符串 (北京时间):', todayStr)
-      console.log('  - 日期字符串比较 selectedDateStr === todayStr:', selectedDateStr === todayStr)
+      console.log('📅 ====== 加载预约数据开始 ====== (使用北京时间)')
+      console.log('📅 目标日期对象:', targetDate)
+      console.log('📅 目标日期字符串 (北京时间):', selectedDateStr)
+      console.log('📅 今天日期对象:', getBeijingToday())
+      console.log('📅 今天字符串 (北京时间):', todayStr)
+      console.log('📅 日期字符串比较 selectedDateStr === todayStr:', selectedDateStr === todayStr)
       
-      // 如果选择的是今天，使用今日预约API
+      let response
+      // 如果选择的是今天，使用日期范围查询以获取所有状态的预约
       if (selectedDateStr === todayStr) {
-        console.log('ScheduleManager: 使用今日预约API')
-        const response = await getTodayAppointments()
-        console.log('ScheduleManager: 今日预约数量', response.data?.length || 0)
-        setAppointments(response.data || [])
+        console.log('📅 使用日期范围查询获取今日所有预约（包括所有状态）')
+        response = await getAppointments(1, 100, '', selectedDateStr, selectedDateStr)
+        console.log('📅 API响应:', response)
+        console.log('📅 今日预约数量', response.data.appointments?.length || 0)
+        console.log('📅 今日预约详情', response.data.appointments)
+        
+        // 详细记录每个预约的状态
+        if (response.data.appointments && response.data.appointments.length > 0) {
+          console.log('📅 每个预约的详细状态:')
+          response.data.appointments.forEach((apt, index) => {
+            console.log(`📅   [${index}] ID:${apt.id}, 状态:${apt.status}, 患者:${apt.patient?.name}, 时间:${apt.start_time}`)
+          })
+        }
+        
+        setAppointments(response.data.appointments || [])
       } else {
         // 如果选择的不是今天，使用日期范围查询
-        console.log('ScheduleManager: 使用日期范围查询，日期:', selectedDateStr)
-        const response = await getAppointments(1, 100, '', selectedDateStr, selectedDateStr)
-        console.log('ScheduleManager: 指定日期预约数量', response.data.appointments?.length || 0)
+        console.log('📅 使用日期范围查询，日期:', selectedDateStr)
+        response = await getAppointments(1, 100, '', selectedDateStr, selectedDateStr)
+        console.log('📅 API响应:', response)
+        console.log('📅 指定日期预约数量', response.data.appointments?.length || 0)
         setAppointments(response.data.appointments || [])
       }
+      
+      console.log('📅 ====== 加载预约数据完成 ======')
+      
     } catch (error) {
-      console.error('ScheduleManager: 加载预约数据失败', error)
+      console.error('❌ ScheduleManager: 加载预约数据失败', error)
+      console.error('❌ 错误详情:', error)
       toast.error('加载预约数据失败')
       setAppointments([])
     } finally {
@@ -246,7 +268,7 @@ export function ScheduleManager() {
       case "completed":
         return "bg-green-100 text-green-700 border-green-200"
       case "confirmed":
-        return "bg-blue-100 text-blue-700 border-blue-200"
+        return "bg-orange-100 text-orange-700 border-orange-200"
       case "scheduled":
         return "bg-gray-100 text-gray-700 border-gray-200"
       case "cancelled":
@@ -263,7 +285,7 @@ export function ScheduleManager() {
       case "completed":
         return "已完成"
       case "confirmed":
-        return "已确认"
+        return "进行中"
       case "scheduled":
         return "待服务"
       case "cancelled":
@@ -422,6 +444,75 @@ export function ScheduleManager() {
     }
   }
 
+  // 显示开始服务确认框
+  const handleStartService = (appointment: Appointment) => {
+    console.log("ScheduleManager: 显示开始服务确认框", appointment)
+    setStartAppointment(appointment)
+    setShowStartConfirmModal(true)
+  }
+
+  // 确认开始服务
+  const confirmStartService = async () => {
+    if (!startAppointment) return
+    
+    try {
+      console.log("🚀 ScheduleManager: ====== 开始服务流程 ======")
+      console.log("🚀 当前预约信息:", startAppointment)
+      console.log("🚀 当前预约状态:", startAppointment.status)
+      console.log("🚀 当前预约ID:", startAppointment.id)
+      
+      // 更新预约状态为已确认（进行中）
+      console.log("🚀 准备更新预约状态为 confirmed...")
+      const updateResult = await handleUpdateAppointment(startAppointment.id, { status: 'confirmed' })
+      console.log("🚀 预约状态更新完成, 结果:", updateResult)
+      
+      // 验证更新是否成功 - 重新获取预约详情
+      console.log("🚀 验证更新结果...")
+      try {
+        const updatedAppointment = await getAppointmentDetail(startAppointment.id)
+        console.log("🚀 更新后的预约详情:", updatedAppointment.data)
+        console.log("🚀 更新后的预约状态:", updatedAppointment.data.status)
+        
+        if (updatedAppointment.data.status !== 'confirmed') {
+          console.error("❌ 状态更新异常！预期: confirmed, 实际:", updatedAppointment.data.status)
+          toast.error(`状态更新异常: ${updatedAppointment.data.status}`)
+        } else {
+          console.log("✅ 状态更新成功确认")
+        }
+      } catch (verifyError) {
+        console.error("❌ 验证更新结果失败:", verifyError)
+      }
+      
+      // 关闭确认框
+      console.log("🚀 关闭确认对话框...")
+      setShowStartConfirmModal(false)
+      setStartAppointment(null)
+      
+      // 准备跳转参数
+      const params = new URLSearchParams({
+        familyId: startAppointment.patient?.family?.id?.toString() || '',
+        familyName: startAppointment.patient?.family?.name || startAppointment.patient?.name || '',
+        patientName: startAppointment.patient?.name || '',
+        service: startAppointment.service_type?.name || '',
+        time: startAppointment.start_time,
+        address: startAppointment.patient?.family?.address || '',
+        appointmentId: startAppointment.id.toString()
+      })
+      
+      console.log("🚀 跳转参数:", params.toString())
+      console.log("🚀 准备跳转到记录页面...")
+      
+      // 立即跳转到记录页面
+      console.log("🚀 执行跳转...")
+      router.push(`/records?${params.toString()}`)
+      
+    } catch (error) {
+      console.error('❌ ScheduleManager: 开始服务失败', error)
+      console.error('❌ 错误详情:', error)
+      toast.error('开始服务失败，请重试')
+    }
+  }
+
   // 重新安排预约
   const handleRescheduleAppointment = async (appointmentId: number, newDateTime: { date: string, time: string }) => {
     try {
@@ -444,24 +535,37 @@ export function ScheduleManager() {
 
   const handleUpdateAppointment = async (appointmentId: number, updates: Partial<CreateAppointmentRequest>) => {
     try {
-      console.log("ScheduleManager: 更新预约", appointmentId, updates)
+      console.log("📝 ScheduleManager: ====== 更新预约开始 ======")
+      console.log("📝 预约ID:", appointmentId)
+      console.log("📝 更新内容:", updates)
+      console.log("📝 当前预约列表长度:", appointments.length)
       
       const response = await updateAppointment(appointmentId, updates)
-      console.log("ScheduleManager: 更新预约成功", response.data)
+      console.log("📝 API更新响应:", response)
+      console.log("📝 更新后的预约数据:", response.data)
+      console.log("📝 更新后的预约状态:", response.data.status)
       
       toast.success('预约更新成功')
       
       // 重新加载预约数据
-      loadAppointmentsByDate()
+      console.log("📝 重新加载预约数据...")
+      await loadAppointmentsByDate()
+      console.log("📝 重新加载完成，新的预约列表长度:", appointments.length)
       
       // 如果正在查看详情，更新详情数据
       if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        console.log("📝 更新当前选中的预约详情")
         setSelectedAppointment(response.data)
       }
       
+      console.log("📝 ====== 更新预约完成 ======")
+      return response.data
+      
     } catch (error) {
-      console.error('ScheduleManager: 更新预约失败', error)
+      console.error('❌ ScheduleManager: 更新预约失败', error)
+      console.error('❌ 错误详情:', error)
       toast.error('更新预约失败，请重试')
+      throw error // 重新抛出错误，让调用方知道失败了
     }
   }
 
@@ -488,23 +592,34 @@ export function ScheduleManager() {
 
   const handleCompleteAppointment = async (appointmentId: number) => {
     try {
-      console.log("ScheduleManager: 完成预约", appointmentId)
+      console.log("🏁 ScheduleManager: ====== 完成预约被调用 ======")
+      console.log("🏁 调用堆栈:", new Error().stack)
+      console.log("🏁 预约ID:", appointmentId)
+      
+      // 添加确认对话框防止误操作
+      const confirmed = window.confirm("确定要完成这个预约吗？完成后将无法撤销。")
+      if (!confirmed) {
+        console.log("🏁 用户取消完成预约操作")
+        return
+      }
       
       const response = await completeAppointment(appointmentId)
-      console.log("ScheduleManager: 完成预约成功", response.data)
+      console.log("🏁 ScheduleManager: 完成预约API响应", response.data)
       
       toast.success('预约已完成')
       
       // 重新加载预约数据
+      console.log("🏁 重新加载预约数据...")
       loadAppointmentsByDate()
       
       // 如果正在查看详情，更新详情数据
       if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        console.log("🏁 更新选中的预约详情")
         setSelectedAppointment(response.data)
       }
       
     } catch (error) {
-      console.error('ScheduleManager: 完成预约失败', error)
+      console.error('❌ ScheduleManager: 完成预约失败', error)
       toast.error('完成预约失败，请重试')
     }
   }
@@ -687,13 +802,17 @@ export function ScheduleManager() {
         {/* 底部操作栏 */}
         <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 space-y-3">
           {selectedAppointment.status === "scheduled" && (
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-medium" size="lg">
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-3 font-medium" 
+              size="lg"
+              onClick={() => handleStartService(selectedAppointment)}
+            >
               <Play className="h-5 w-5 mr-2" />
               开始服务
             </Button>
           )}
 
-          {selectedAppointment.status === "in-progress" && (
+          {selectedAppointment.status === "confirmed" && (
             <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
               <Button variant="outline" className="rounded-xl py-3 border-green-200 text-green-700 hover:bg-green-50" size="lg">
                 <CheckCircle className="h-5 w-5 mr-2" />
@@ -863,7 +982,7 @@ export function ScheduleManager() {
                     className="flex-1 bg-transparent"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleUpdateAppointment(appointment.id, { status: 'confirmed' })
+                      handleStartService(appointment)
                     }}
                   >
                     开始
@@ -1189,6 +1308,67 @@ export function ScheduleManager() {
                 onClick={confirmCancelAppointment}
               >
                 确认取消
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 开始服务确认对话框 */}
+      <Dialog open={showStartConfirmModal} onOpenChange={setShowStartConfirmModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <Play className="h-5 w-5" />
+              确认开始服务
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-medium text-blue-800 mb-2">服务信息</h4>
+              {startAppointment && (
+                <div className="space-y-2 text-sm text-blue-700">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>家庭：{startAppointment.patient?.name}家</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span>服务：{startAppointment.service_type?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>时间：{startAppointment.scheduled_date} {startAppointment.start_time}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 mt-0.5" />
+                    <span>地址：{startAppointment.patient?.family?.address || '地址未知'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-600">
+              确认开始为该家庭提供服务吗？开始后将自动跳转到记录页面。
+            </p>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowStartConfirmModal(false)
+                  setStartAppointment(null)
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={confirmStartService}
+              >
+                确认开始
               </Button>
             </div>
           </div>

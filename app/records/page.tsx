@@ -188,10 +188,13 @@ const familyMembers = [
 export default function RecordsPage() {
   const searchParams = useSearchParams()
   const patientId = searchParams.get("patientId")
+  const familyId = searchParams.get("familyId")
+  const familyName = searchParams.get("familyName")
   const patientName = searchParams.get("patientName")
   const service = searchParams.get("service")
   const time = searchParams.get("time")
   const address = searchParams.get("address")
+  const appointmentId = searchParams.get("appointmentId")
   const taskType = searchParams.get("taskType")
 
   const [isRecording, setIsRecording] = useState(false)
@@ -216,6 +219,11 @@ export default function RecordsPage() {
         { memberId: "2", memberName: "李红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
         { memberId: "3", memberName: "李刚", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
       ],
+      李强: [
+        { memberId: "1", memberName: "李强", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "2", memberName: "张丽华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "3", memberName: "李小明", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+      ],
       王奶奶: [
         { memberId: "1", memberName: "王秀英", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
         { memberId: "2", memberName: "王建华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
@@ -226,20 +234,38 @@ export default function RecordsPage() {
       ],
     }
 
-    return (
-      familyData[patientName || ""] || [
-        { memberId: "1", memberName: "李红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "李刚", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "李博", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ]
-    )
+    console.log("[Records] 查找家庭成员数据，传入名称:", patientName)
+    console.log("[Records] 可用的家庭数据键:", Object.keys(familyData))
+    const result = familyData[patientName || ""] || [
+      { memberId: "1", memberName: "李红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+      { memberId: "2", memberName: "李刚", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+      { memberId: "3", memberName: "李博", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+    ]
+    console.log("[Records] 返回的家庭成员数据:", result)
+    return result
   }
 
   const [currentFamilyHealth, setCurrentFamilyHealth] = useState<FamilyMemberHealth[]>(() =>
-    getFamilyMembersForPatient(patientName),
+    getFamilyMembersForPatient(familyName || patientName),
   )
 
   const getCurrentAppointmentData = (): CurrentAppointment => {
+    // 优先使用从日程页面传来的家庭信息
+    if (familyId && familyName && service && time && address) {
+      return {
+        id: familyId,
+        patientName: decodeURIComponent(familyName),
+        patientAge: getPatientAge(decodeURIComponent(familyName)),
+        serviceType: decodeURIComponent(service),
+        date: new Date().toISOString().split("T")[0],
+        time: decodeURIComponent(time),
+        location: decodeURIComponent(address),
+        packageType: getPackageType(decodeURIComponent(familyName)),
+        paymentStatus: "paid" as const,
+      }
+    }
+    
+    // 兼容旧的参数格式
     if (patientId && patientName && service && time && address) {
       return {
         id: patientId,
@@ -290,8 +316,8 @@ export default function RecordsPage() {
   const currentAppointment = getCurrentAppointmentData()
 
   useEffect(() => {
-    setCurrentFamilyHealth(getFamilyMembersForPatient(patientName))
-  }, [patientName])
+    setCurrentFamilyHealth(getFamilyMembersForPatient(familyName || patientName))
+  }, [familyName, patientName])
 
   const [isEditingFamilyHealth, setIsEditingFamilyHealth] = useState(true) // Default to true so it's always expanded
 
@@ -546,13 +572,8 @@ export default function RecordsPage() {
         setLocalRecords(updatedLocalRecords)
         saveRecordsToStorage(updatedLocalRecords)
 
-        if (patientId) {
-          const completedAppointments = JSON.parse(localStorage.getItem("completedAppointments") || "[]")
-          if (!completedAppointments.includes(patientId)) {
-            completedAppointments.push(patientId)
-            localStorage.setItem("completedAppointments", JSON.stringify(completedAppointments))
-          }
-        }
+        // 注意：不要自动标记预约为完成，让用户手动操作
+        console.log("[v0] 健康记录已保存，但预约状态需要用户手动更新")
 
         setCurrentRecord(null)
         setCurrentFamilyHealth(getFamilyMembersForPatient(patientName))
@@ -832,8 +853,8 @@ export default function RecordsPage() {
       <div className={`min-h-screen bg-gray-50 ${deviceType === "mobile" ? "pb-24" : deviceType === "tablet" ? "pb-22" : "pb-20"}`}>
       {/* 微信风格的记录页头部 */}
       <WechatRecordHeader
-        title="患者记录"
-        subtitle="记录和管理患者健康信息"
+        title="家庭记录"
+        subtitle="记录和管理家庭健康信息"
         onAdd={() => {
           // 开始新的记录
           if (!isRecording) {
@@ -861,7 +882,7 @@ export default function RecordsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className={`${deviceType === "mobile" ? "px-4 py-4" : "px-6 py-5"}`}>
-            {/* 患者信息卡片 */}
+            {/* 家庭信息卡片 */}
             <div className="bg-blue-50/50 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -869,7 +890,7 @@ export default function RecordsPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 text-lg">{currentAppointment.patientName}</h3>
-                  <p className="text-gray-600 text-sm">{currentAppointment.patientAge}岁</p>
+                  <p className="text-gray-600 text-sm">家庭户主</p>
                 </div>
                 <Badge className={`${getPaymentStatusColor(currentAppointment.paymentStatus)} px-3 py-1 text-xs font-medium`}>
                   {getPaymentStatusText(currentAppointment.paymentStatus)}
@@ -1337,7 +1358,7 @@ export default function RecordsPage() {
               <div className="flex items-center gap-2">
                 <Activity className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
                 <span className="text-white font-medium">
-                  患者记录列表
+                  家庭记录列表
                 </span>
               </div>
               <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-xs">

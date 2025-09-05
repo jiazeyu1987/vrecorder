@@ -510,7 +510,9 @@ export const deleteAppointment = async (appointmentId: number) => {
 
 // 完成预约
 export const completeAppointment = async (appointmentId: number): Promise<AppointmentResponse> => {
-  console.log('API: 完成预约', appointmentId)
+  console.log('🏁 API: ====== 完成预约被调用 ======')
+  console.log('🏁 调用堆栈:', new Error().stack)
+  console.log('🏁 预约ID:', appointmentId)
   return apiRequest(`/appointments/${appointmentId}/complete`, {
     method: 'POST',
   })
