@@ -1021,20 +1021,25 @@ export function ScheduleManager() {
                     const members = family.members || family.patients || [];
                     const familyName = family.householdHead || family.name || `家庭${family.id}`;
                     
-                    return members.length > 0 ? members.map((member, index) => (
+                    // 只显示户主，不显示其他家庭成员
+                    const householdHead = members.find(member => 
+                      member.relationship === '户主' || member.relationship === 'householdHead'
+                    );
+                    
+                    return householdHead ? (
                       <SelectItem 
-                        key={`${family.id}-${member.id || member.name || index}`} 
-                        value={member.id?.toString() || `${family.id}-${index}`}
+                        key={`${family.id}-${householdHead.id || householdHead.name}`} 
+                        value={householdHead.id?.toString() || `${family.id}-household`}
                       >
-                        {familyName} - {member.name} ({member.age}岁, {member.relationship})
+                        {familyName} - {householdHead.name} ({householdHead.age}岁, 户主)
                       </SelectItem>
-                    )) : (
+                    ) : (
                       <SelectItem 
                         key={family.id} 
                         value={family.id?.toString()}
                         disabled
                       >
-                        {familyName} - 暂无成员
+                        {familyName} - 暂无户主信息
                       </SelectItem>
                     );
                   })}

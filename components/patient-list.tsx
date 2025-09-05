@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -166,18 +167,14 @@ export function PatientList() {
   const isMobile = useIsMobile()
   const [newFamily, setNewFamily] = useState<CreateFamilyRequest>({
     householdHead: "",
+    householdHeadAge: 0,
+    householdHeadGender: "",
+    householdHeadPackageType: "",
+    householdHeadConditions: "",
+    householdHeadMedications: "",
     address: "",
     phone: "",
-    members: [
-      {
-        name: "",
-        age: 0,
-        gender: "",
-        relationship: "户主",
-        conditions: "",
-        packageType: "",
-      },
-    ],
+    members: [],
   })
   const [editedPatientData, setEditedPatientData] = useState<Partial<FamilyMember>>({})
   const [editedFamilyData, setEditedFamilyData] = useState<Partial<CreateFamilyRequest>>({})
@@ -189,7 +186,6 @@ export function PatientList() {
     gender: "",
     relationship: "",
     conditions: "",
-    packageType: "",
     paymentStatus: "normal",
     phone: "",
     medications: ""
@@ -237,23 +233,15 @@ export function PatientList() {
     if (servicePackages.length > 0) {
       const defaultPackage = servicePackages[0].name
       
-      // 更新新家庭成员默认套餐
+      // 更新户主默认套餐
       setNewFamily(prev => ({
         ...prev,
-        members: prev.members.map(member => 
-          member.packageType === "" ? { ...member, packageType: defaultPackage } : member
-        )
+        householdHeadPackageType: prev.householdHeadPackageType === "" ? defaultPackage : prev.householdHeadPackageType
       }))
-      
-      // 更新新成员默认套餐
-      setNewMember(prev => 
-        prev.packageType === "" ? { ...prev, packageType: defaultPackage } : prev
-      )
     }
   }, [servicePackages])
 
   const addFamilyMember = () => {
-    const defaultPackage = servicePackages.length > 0 ? servicePackages[0].name : ""
     setNewFamily((prev) => ({
       ...prev,
       members: [
@@ -264,7 +252,6 @@ export function PatientList() {
           gender: "",
           relationship: "",
           conditions: "",
-          packageType: defaultPackage,
         },
       ],
     }))
@@ -291,8 +278,9 @@ export function PatientList() {
   const handleSubmitNewFamily = async () => {
     try {
       // 验证表单数据
-      if (!newFamily.householdHead || !newFamily.address || !newFamily.phone) {
-        toast.error('请填写完整的家庭基本信息')
+      if (!newFamily.householdHead || !newFamily.householdHeadAge || !newFamily.householdHeadGender || 
+          !newFamily.householdHeadPackageType || !newFamily.address || !newFamily.phone) {
+        toast.error('请填写完整的户主基本信息')
         return
       }
 
@@ -316,18 +304,14 @@ export function PatientList() {
   const resetNewFamilyForm = () => {
     setNewFamily({
       householdHead: "",
+      householdHeadAge: 0,
+      householdHeadGender: "",
+      householdHeadPackageType: servicePackages.length > 0 ? servicePackages[0].name : "",
+      householdHeadConditions: "",
+      householdHeadMedications: "",
       address: "",
       phone: "",
-      members: [
-        {
-          name: "",
-          age: 0,
-          gender: "",
-          relationship: "户主",
-          conditions: "",
-          packageType: servicePackages.length > 0 ? servicePackages[0].name : "",
-        },
-      ],
+      members: [],
     })
   }
 
@@ -1050,34 +1034,6 @@ export function PatientList() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1">
-                  <Label className={cn(
-                    "text-gray-600 font-medium",
-                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
-                  )}>套餐类型</Label>
-                  <Select
-                    value={editedPatientData.packageType || ""}
-                    onValueChange={(value) => updateEditedPatientData("packageType", value)}
-                  >
-                    <SelectTrigger className={cn(
-                      "border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white transition-all duration-200",
-                      deviceType === "mobile" ? "text-sm h-10" : "text-xs h-8"
-                    )}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingPackages ? (
-                        <SelectItem value="" disabled>加载中...</SelectItem>
-                      ) : (
-                        servicePackages.map((pkg) => (
-                          <SelectItem key={pkg.id} value={pkg.name}>
-                            {pkg.name} - ¥{pkg.price}/月
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
@@ -1110,16 +1066,6 @@ export function PatientList() {
                     "font-semibold text-gray-800",
                     deviceType === "mobile" ? "text-sm" : "text-xs"
                   )}>{selectedPatient.relationship}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className={cn(
-                    "text-gray-500 font-medium",
-                    deviceType === "mobile" ? "text-xs" : "text-[10px]"
-                  )}>套餐类型</span>
-                  <p className={cn(
-                    "font-semibold text-gray-800",
-                    deviceType === "mobile" ? "text-sm" : "text-xs"
-                  )}>{selectedPatient.packageType}</p>
                 </div>
               </div>
             )}
@@ -1719,16 +1665,6 @@ export function PatientList() {
                           deviceType === "mobile" ? "text-xs" : "text-[10px]"
                         )}>{member.lastService}</p>
                       </div>
-                      <div className="text-center">
-                        <p className={cn(
-                          "text-gray-500 font-medium mb-0.5",
-                          deviceType === "mobile" ? "text-[10px]" : "text-[9px]"
-                        )}>套餐类型</p>
-                        <p className={cn(
-                          "text-gray-800 font-semibold",
-                          deviceType === "mobile" ? "text-xs" : "text-[10px]"
-                        )}>{member.packageType}</p>
-                      </div>
                     </div>
                   </div>
 
@@ -1923,28 +1859,6 @@ export function PatientList() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-600">套餐类型</Label>
-                  <Select
-                    value={editedMemberData.packageType || ""}
-                    onValueChange={(value) => updateEditedMemberData("packageType", value)}
-                  >
-                    <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white">
-                      <SelectValue placeholder="选择套餐" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingPackages ? (
-                        <SelectItem value="" disabled>加载中...</SelectItem>
-                      ) : (
-                        servicePackages.map((pkg) => (
-                          <SelectItem key={pkg.id} value={pkg.name}>
-                            {pkg.name} - ¥{pkg.price}/月
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
                   <Label className="text-xs text-gray-600">支付状态</Label>
                   <Select
                     value={editedMemberData.paymentStatus || ""}
@@ -2058,28 +1972,6 @@ export function PatientList() {
                       <SelectItem value="父亲">父亲</SelectItem>
                       <SelectItem value="母亲">母亲</SelectItem>
                       <SelectItem value="其他">其他</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-600">套餐类型</Label>
-                  <Select
-                    value={newMember.packageType || (servicePackages.length > 0 ? servicePackages[0].name : "")}
-                    onValueChange={(value) => updateNewMember("packageType", value)}
-                  >
-                    <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
-                      <SelectValue placeholder="选择套餐" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingPackages ? (
-                        <SelectItem value="" disabled>加载中...</SelectItem>
-                      ) : (
-                        servicePackages.map((pkg) => (
-                          <SelectItem key={pkg.id} value={pkg.name}>
-                            {pkg.name} - ¥{pkg.price}/月
-                          </SelectItem>
-                        ))
-                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2987,6 +2879,70 @@ export function PatientList() {
                       <label className={cn(
                         "font-medium text-gray-700",
                         deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>年龄</label>
+                      <Input
+                        type="number"
+                        value={newFamily.householdHeadAge || ""}
+                        onChange={(e) => setNewFamily((prev) => ({ ...prev, householdHeadAge: Number(e.target.value) || 0 }))}
+                        placeholder="请输入年龄"
+                        className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+                          deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>性别</label>
+                      <Select
+                        value={newFamily.householdHeadGender}
+                        onValueChange={(value) => setNewFamily((prev) => ({ ...prev, householdHeadGender: value }))}
+                      >
+                        <SelectTrigger className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+                          deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
+                        )}>
+                          <SelectValue placeholder="请选择性别" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="男">男</SelectItem>
+                          <SelectItem value="女">女</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>服务套餐</label>
+                      <Select
+                        value={newFamily.householdHeadPackageType}
+                        onValueChange={(value) => setNewFamily((prev) => ({ ...prev, householdHeadPackageType: value }))}
+                      >
+                        <SelectTrigger className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+                          deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
+                        )}>
+                          <SelectValue placeholder="请选择套餐" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {servicePackages.map((pkg) => (
+                            <SelectItem key={pkg.id} value={pkg.name}>
+                              {pkg.name} - ¥{pkg.price}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
                       )}>联系电话</label>
                       <Input
                         value={newFamily.phone}
@@ -2999,24 +2955,62 @@ export function PatientList() {
                         )}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>家庭地址</label>
+                      <Input
+                        value={newFamily.address}
+                        onChange={(e) => setNewFamily((prev) => ({ ...prev, address: e.target.value }))}
+                        placeholder="请输入家庭地址"
+                        className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+                          deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
+                        )}
+                      />
+                    </div>
                   </div>
 
-                  <div className="mt-4 space-y-2">
-                    <label className={cn(
-                      "font-medium text-gray-700",
-                      deviceType === "mobile" ? "text-xs" : "text-sm"
-                    )}>家庭地址</label>
-                    <Input
-                      value={newFamily.address}
-                      onChange={(e) => setNewFamily((prev) => ({ ...prev, address: e.target.value }))}
-                      placeholder="请输入家庭地址"
-                      className={cn(
-                        "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
-                        "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                        deviceType === "mobile" ? "h-10 text-sm" : "h-11 text-sm"
-                      )}
-                    />
+                  <div className="mt-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>健康状况（选填）</label>
+                      <Textarea
+                        value={newFamily.householdHeadConditions}
+                        onChange={(e) => setNewFamily((prev) => ({ ...prev, householdHeadConditions: e.target.value }))}
+                        placeholder="请输入健康状况或疾病信息"
+                        className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none",
+                          deviceType === "mobile" ? "text-sm" : "text-sm"
+                        )}
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className={cn(
+                        "font-medium text-gray-700",
+                        deviceType === "mobile" ? "text-xs" : "text-sm"
+                      )}>用药情况（选填）</label>
+                      <Textarea
+                        value={newFamily.householdHeadMedications}
+                        onChange={(e) => setNewFamily((prev) => ({ ...prev, householdHeadMedications: e.target.value }))}
+                        placeholder="请输入用药情况"
+                        className={cn(
+                          "border-gray-200 bg-white rounded-xl focus:bg-white transition-all duration-150",
+                          "focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none",
+                          deviceType === "mobile" ? "text-sm" : "text-sm"
+                        )}
+                        rows={2}
+                      />
+                    </div>
                   </div>
+
                 </div>
 
                 {/* 微信小程序家庭成员卡片 */}
@@ -3164,36 +3158,6 @@ export function PatientList() {
                                 deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
                               )}
                             />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className={cn(
-                              "font-medium text-gray-600",
-                              "block",
-                              deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                            )}>套餐类型</label>
-                            <Select
-                              value={member.packageType}
-                              onValueChange={(value) => updateFamilyMember(index, "packageType", value)}
-                            >
-                              <SelectTrigger className={cn(
-                                "w-full border-gray-200 bg-white rounded-lg focus:bg-white",
-                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                                deviceType === "mobile" ? "h-8 text-xs px-2" : "h-9 text-sm px-3"
-                              )}>
-                                <SelectValue placeholder="选择套餐" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {loadingPackages ? (
-                                  <SelectItem value="" disabled>加载中...</SelectItem>
-                                ) : (
-                                  servicePackages.map((pkg) => (
-                                    <SelectItem key={pkg.id} value={pkg.name}>
-                                      {pkg.name} - ¥{pkg.price}/月
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
                           </div>
                         </div>
 

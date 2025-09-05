@@ -123,6 +123,11 @@ export interface FamilyDetailResponse {
 
 export interface CreateFamilyRequest {
   householdHead: string
+  householdHeadAge: number
+  householdHeadGender: string
+  householdHeadPackageType: string
+  householdHeadConditions?: string
+  householdHeadMedications?: string
   address: string
   phone: string
   members: Array<{
@@ -131,7 +136,6 @@ export interface CreateFamilyRequest {
     gender: string
     relationship: string
     conditions: string
-    packageType: string
     medications?: string
   }>
 }
