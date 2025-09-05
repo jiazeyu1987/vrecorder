@@ -212,56 +212,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4 max-w-md mx-auto">
-      {/* 顶部状态栏 */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 mx-4 mt-4 rounded-3xl shadow-lg shadow-green-200/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-              <User className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold">张护士</h1>
-              <p className="text-green-100 text-sm flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDateTime(currentDateTime)}
-              </p>
-            </div>
-          </div>
-          <div className="bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">工作中</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 顶部状态栏 - 已隐藏 */}
 
-      {/* 紧急提醒卡片 */}
-      <div className="mx-4">
-        <Card className="border-0 bg-gradient-to-r from-red-50 to-orange-50 shadow-lg shadow-red-100/50 rounded-3xl overflow-hidden">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
-                <AlertCircle className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-red-700">紧急提醒</h3>
-                  <span className="text-xs text-red-500 bg-red-100 px-2 py-1 rounded-full">15分钟前</span>
-                </div>
-                <p className="text-sm text-red-600 leading-relaxed">李奶奶血压异常 (180/110 mmHg)，需要立即处理</p>
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 rounded-2xl px-4 py-2 h-8 shadow-lg shadow-red-200 transform hover:scale-105 transition-all duration-200"
-                  onClick={handleEmergencyAction}
-                >
-                  立即处理
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 紧急提醒卡片 - 已隐藏 */}
 
       {/* 今日概览卡片 */}
       <div className="mx-4">
@@ -341,40 +294,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="border-t border-gray-100 pt-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-3 w-3 text-white" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700">财务状况</span>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div
-                  className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl border border-orange-200/50 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  onClick={() => handleFinanceClick("pending")}
-                >
-                  <div className="text-lg font-bold text-orange-700 mb-1">2</div>
-                  <div className="text-xs text-orange-600 mb-1">待收款</div>
-                  <div className="text-xs text-orange-700 font-semibold">¥560</div>
-                </div>
-                <div
-                  className="p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200/50 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  onClick={() => handleFinanceClick("paid")}
-                >
-                  <div className="text-lg font-bold text-green-700 mb-1">12</div>
-                  <div className="text-xs text-green-600 mb-1">已收款</div>
-                  <div className="text-xs text-green-700 font-semibold">¥3,240</div>
-                </div>
-                <div
-                  className="p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200/50 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200"
-                  onClick={() => handleFinanceClick("refund")}
-                >
-                  <div className="text-lg font-bold text-gray-700 mb-1">0</div>
-                  <div className="text-xs text-gray-600 mb-1">退款</div>
-                  <div className="text-xs text-gray-700 font-semibold">¥0</div>
-                </div>
-              </div>
-            </div>
+            {/* 财务状况部分 - 已隐藏 */}
           </CardContent>
         </Card>
       </div>
@@ -448,143 +368,9 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* 付款提醒卡片 */}
-      <div className="mx-4">
-        <Card className="border-0 bg-gradient-to-r from-amber-50 to-orange-50 shadow-xl shadow-amber-200/50 rounded-3xl overflow-hidden">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200">
-                <CreditCard className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-amber-800">付款提醒</h3>
-                  <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-full">待处理</span>
-                </div>
-                <p className="text-sm text-amber-700 leading-relaxed">有2笔待处理的付款事项，总金额 ¥560</p>
-                <div className="flex gap-4 text-xs text-amber-600">
-                  <span className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                    张先生家 ¥280
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                    王奶奶家 ¥280
-                  </span>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 rounded-2xl px-4 py-2 h-8 shadow-lg shadow-amber-200 transform hover:scale-105 transition-all duration-200"
-                onClick={handlePaymentReminder}
-              >
-                立即处理
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 付款提醒卡片 - 已隐藏 */}
 
-      {/* 今日日程卡片 */}
-      <div className="mx-4 mb-6">
-        <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg flex items-center gap-3 text-gray-800">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl flex items-center justify-center">
-                <Clock className="h-4 w-4 text-white" />
-              </div>
-              今日日程
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-2xl px-3 py-1.5"
-              onClick={handleViewAllSchedule}
-            >
-              查看全部
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {todayAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className={`p-4 rounded-3xl border cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ${
-                  appointment.status === "已完成"
-                    ? "bg-gradient-to-r from-green-50 to-green-100 border-green-200/50 shadow-md shadow-green-100/50"
-                    : appointment.status === "进行中"
-                      ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200/50 shadow-md shadow-blue-100/50"
-                      : "bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200/50 shadow-md shadow-orange-100/50"
-                }`}
-                onClick={() => handleAppointmentClick(appointment)}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-8 h-8 rounded-2xl flex items-center justify-center ${
-                        appointment.status === "已完成"
-                          ? "bg-gradient-to-br from-green-400 to-green-500"
-                          : appointment.status === "进行中"
-                            ? "bg-gradient-to-br from-blue-400 to-blue-500"
-                            : "bg-gradient-to-br from-orange-400 to-orange-500"
-                      }`}
-                    >
-                      <Clock className="h-4 w-4 text-white" />
-                    </div>
-                    <span
-                      className={`text-sm font-semibold ${
-                        appointment.status === "已完成"
-                          ? "text-green-800"
-                          : appointment.status === "进行中"
-                            ? "text-blue-800"
-                            : "text-orange-800"
-                      }`}
-                    >
-                      {appointment.time}
-                    </span>
-                  </div>
-                  <div
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                      appointment.status === "已完成"
-                        ? "bg-green-200/50 text-green-700 border border-green-300/50"
-                        : appointment.status === "进行中"
-                          ? "bg-blue-200/50 text-blue-700 border border-blue-300/50"
-                          : "bg-orange-200/50 text-orange-700 border border-orange-300/50"
-                    }`}
-                  >
-                    {appointment.status}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-gray-100 rounded-xl flex items-center justify-center">
-                      <MapPin className="h-3 w-3 text-gray-500" />
-                    </div>
-                    <span className="text-sm text-gray-800 font-medium">
-                      {appointment.patientName}家 - {appointment.service}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-gray-100 rounded-xl flex items-center justify-center">
-                      <User className="h-3 w-3 text-gray-500" />
-                    </div>
-                    <span className="text-xs text-gray-600">
-                      {appointment.patient} | {appointment.address}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              className="w-full mt-4 h-12 text-teal-600 border-teal-200 bg-gradient-to-r from-teal-50 to-teal-100 hover:from-teal-100 hover:to-teal-200 rounded-3xl border-0 shadow-md shadow-teal-100/50 hover:shadow-lg hover:scale-105 transition-all duration-200"
-              onClick={handleAddNewAppointment}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              添加新预约
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      {/* 今日日程卡片 - 已隐藏 */}
 
       {/* 任务详情模态框 */}
       {showTaskDetails && (

@@ -1,5 +1,5 @@
 import { BottomNavigation } from "@/components/bottom-navigation"
-import { ScheduleManager } from "@/components/schedule-manager"
+import ScheduleManager from "@/components/schedule-manager"
 import { ProtectedRoute } from "@/components/protected-route"
 
 export default function SchedulePage() {

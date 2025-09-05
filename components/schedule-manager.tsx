@@ -1197,3 +1197,5 @@ export function ScheduleManager() {
     </div>
   )
 }
+
+export default ScheduleManager
