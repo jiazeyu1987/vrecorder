@@ -511,6 +511,15 @@ export const completeAppointment = async (appointmentId: number): Promise<Appoin
   })
 }
 
+// 取消预约
+export const cancelAppointment = async (appointmentId: number): Promise<AppointmentResponse> => {
+  console.log('API: 取消预约', appointmentId)
+  return apiRequest(`/appointments/${appointmentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ status: 'cancelled' }),
+  })
+}
+
 // 获取服务类型列表
 export const getServiceTypes = async (): Promise<ServiceTypesResponse> => {
   return apiRequest('/service-types')

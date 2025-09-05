@@ -22,14 +22,17 @@ import {
   updateAppointment,
   deleteAppointment,
   completeAppointment,
+  cancelAppointment as cancelAppointmentAPI,
   getServiceTypes,
-  getFamilies 
+  getFamilies,
+  getSystemDefaultPackages,
+  ServicePackage 
 } from "@/lib/api"
 import {
   Clock,
   MapPin,
   User,
-  CreditCard,
+  Package,
   Phone,
   CheckCircle,
   AlertCircle,
@@ -74,7 +77,14 @@ export function ScheduleManager() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([])
   const [families, setFamilies] = useState<any[]>([])
+  const [servicePackages, setServicePackages] = useState<ServicePackage[]>([])
   const [loading, setLoading] = useState(true)
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [rescheduleAppointment, setRescheduleAppointment] = useState<Appointment | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState("")
+  const [rescheduleTime, setRescheduleTime] = useState("")
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false)
+  const [cancelAppointment, setCancelAppointment] = useState<Appointment | null>(null)
   const isMobile = useIsMobile()
   // 获取当前时间，并设置默认时间为一小时后
   const getDefaultDateTime = () => {
@@ -95,13 +105,7 @@ export function ScheduleManager() {
     duration_minutes: 60, // 默认1小时
     appointment_type: "regular",
     status: "scheduled",
-    notes: "",
-    payment: {
-      amount: 0,
-      payment_method: "cash",
-      payment_status: "pending",
-      notes: ""
-    }
+    notes: ""
   })
   // 加载数据
   useEffect(() => {
@@ -112,17 +116,20 @@ export function ScheduleManager() {
   const loadInitialData = async () => {
     try {
       console.log('ScheduleManager: 开始加载初始数据')
-      const [serviceTypesResponse, familiesResponse] = await Promise.all([
+      const [serviceTypesResponse, familiesResponse, servicePackagesResponse] = await Promise.all([
         getServiceTypes(),
-        getFamilies(1, 100) // 获取前100个家庭
+        getFamilies(1, 100), // 获取前100个家庭
+        getSystemDefaultPackages() // 获取服务套餐
       ])
       
       console.log('ScheduleManager: 加载服务类型', serviceTypesResponse.data)
       console.log('ScheduleManager: 加载家庭数据', familiesResponse.data)
       console.log('ScheduleManager: 家庭数据结构', familiesResponse.data.families)
+      console.log('ScheduleManager: 加载服务套餐', servicePackagesResponse.data)
       
       setServiceTypes(serviceTypesResponse.data)
       setFamilies(familiesResponse.data.families)
+      setServicePackages(servicePackagesResponse.data)
       
       // 设置默认预约日期和时间
       const defaultDateTime = getDefaultDateTime()
@@ -202,33 +209,36 @@ export function ScheduleManager() {
     })
   }
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-green-100 text-green-700 border-green-200"
-      case "pending":
-        return "bg-orange-100 text-orange-700 border-orange-200"
-      case "failed":
-      case "refunded":
-        return "bg-red-100 text-red-700 border-red-200"
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200"
+  // 获取家庭的套餐信息
+  const getFamilyPackageInfo = (patientId: number) => {
+    console.log('ScheduleManager: 查找患者套餐信息', patientId, families)
+    
+    // 查找患者所属的家庭
+    const family = families.find(fam => 
+      fam.members && fam.members.some((member: any) => member.id === patientId)
+    )
+    
+    if (family) {
+      console.log('ScheduleManager: 找到家庭', family)
+      // 查找户主信息
+      const householdHead = family.members.find((member: any) => 
+        member.relationship === '户主' || member.relationship === 'householdHead'
+      )
+      
+      if (householdHead) {
+        console.log('ScheduleManager: 找到户主', householdHead)
+        // 查找对应的服务套餐
+        const servicePackage = servicePackages.find(pkg => pkg.name === householdHead.packageType)
+        return {
+          householdHead: householdHead.name,
+          packageName: householdHead.packageType,
+          packageDetails: servicePackage
+        }
+      }
     }
-  }
-
-  const getPaymentStatusText = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "已收款"
-      case "pending":
-        return "待收款"
-      case "failed":
-        return "收款失败"
-      case "refunded":
-        return "已退款"
-      default:
-        return "未知"
-    }
+    
+    console.log('ScheduleManager: 未找到套餐信息')
+    return null
   }
 
   const getStatusColor = (status: string) => {
@@ -316,8 +326,7 @@ export function ScheduleManager() {
         scheduled_time: newAppointment.start_time, // 后端期望的是 scheduled_time
         appointment_type: newAppointment.appointment_type,
         status: newAppointment.status,
-        notes: newAppointment.notes,
-        payment: newAppointment.payment
+        notes: newAppointment.notes
       }
       
       const response = await createAppointment(appointmentData)
@@ -337,13 +346,7 @@ export function ScheduleManager() {
         duration_minutes: 60,
         appointment_type: "regular",
         status: "scheduled",
-        notes: "",
-        payment: {
-          amount: 0,
-          payment_method: "cash",
-          payment_status: "pending",
-          notes: ""
-        }
+        notes: ""
       })
       
       // 强制刷新预约列表
@@ -378,6 +381,64 @@ export function ScheduleManager() {
     } catch (error) {
       console.error('ScheduleManager: 创建预约失败', error)
       toast.error('创建预约失败，请重试')
+    }
+  }
+
+  // 显示取消预约确认框
+  const handleCancelAppointment = (appointment: Appointment | number) => {
+    console.log("ScheduleManager: 显示取消预约确认框", appointment)
+    
+    if (typeof appointment === 'number') {
+      // 如果传入的是ID，需要从appointments中找到对应的预约
+      const foundAppointment = appointments.find(appt => appt.id === appointment)
+      if (foundAppointment) {
+        setCancelAppointment(foundAppointment)
+        setShowCancelConfirmModal(true)
+      }
+    } else {
+      // 如果传入的是预约对象
+      setCancelAppointment(appointment)
+      setShowCancelConfirmModal(true)
+    }
+  }
+
+  // 确认取消预约
+  const confirmCancelAppointment = async () => {
+    if (!cancelAppointment) return
+    
+    try {
+      console.log("ScheduleManager: 确认取消预约", cancelAppointment.id)
+      
+      const response = await cancelAppointmentAPI(cancelAppointment.id)
+      console.log("ScheduleManager: 取消预约成功", response.data)
+      
+      toast.success('预约已取消')
+      setShowCancelConfirmModal(false)
+      setCancelAppointment(null)
+      loadAppointmentsByDate()
+    } catch (error) {
+      console.error('ScheduleManager: 取消预约失败', error)
+      toast.error('取消预约失败，请重试')
+    }
+  }
+
+  // 重新安排预约
+  const handleRescheduleAppointment = async (appointmentId: number, newDateTime: { date: string, time: string }) => {
+    try {
+      console.log("ScheduleManager: 重新安排预约", appointmentId, newDateTime)
+      
+      const response = await updateAppointment(appointmentId, {
+        scheduled_date: newDateTime.date,
+        scheduled_time: newDateTime.time
+      })
+      console.log("ScheduleManager: 重新安排预约成功", response.data)
+      
+      toast.success('预约时间已调整')
+      setShowRescheduleModal(false)
+      loadAppointmentsByDate()
+    } catch (error) {
+      console.error('ScheduleManager: 重新安排预约失败', error)
+      toast.error('调整预约时间失败，请重试')
     }
   }
 
@@ -558,28 +619,50 @@ export function ScheduleManager() {
             </div>
           </div>
 
-          {/* 费用信息卡片 */}
+          {/* 套餐信息卡片 */}
           <div className="bg-white rounded-xl shadow-sm mx-4 mb-3 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-50">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                  <CreditCard className="h-4 w-4 text-orange-600" />
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Package className="h-4 w-4 text-blue-600" />
                 </div>
-                <h3 className="font-medium text-gray-900">费用信息</h3>
+                <h3 className="font-medium text-gray-900">套餐信息</h3>
               </div>
             </div>
             <div className="px-6 py-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 text-sm">服务费用</span>
-                <span className="font-semibold text-xl text-gray-900">¥{selectedAppointment.payment?.amount || 0}</span>
-              </div>
-              <div className="w-full h-px bg-gray-100"></div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 text-sm">付款状态</span>
-                <Badge variant="outline" className={getPaymentStatusColor(selectedAppointment.payment?.payment_status || 'pending')}>
-                  {getPaymentStatusText(selectedAppointment.payment?.payment_status || 'pending')}
-                </Badge>
-              </div>
+              {(() => {
+                const packageInfo = getFamilyPackageInfo(selectedAppointment.patient_id)
+                return packageInfo ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 text-sm">户主姓名</span>
+                      <span className="font-semibold text-gray-900">{packageInfo.householdHead}</span>
+                    </div>
+                    <div className="w-full h-px bg-gray-100"></div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 text-sm">服务套餐</span>
+                      <span className="font-semibold text-blue-600">{packageInfo.packageName}</span>
+                    </div>
+                    {packageInfo.packageDetails && (
+                      <>
+                        <div className="w-full h-px bg-gray-100"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600 text-sm">套餐价格</span>
+                          <span className="font-semibold text-green-600">¥{packageInfo.packageDetails.price}/月</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600 text-sm">服务频率</span>
+                          <span className="text-gray-900">{packageInfo.packageDetails.service_frequency}次/月</span>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <span>未找到套餐信息</span>
+                  </div>
+                )
+              })()}
             </div>
           </div>
 
@@ -628,16 +711,31 @@ export function ScheduleManager() {
               <Phone className="h-5 w-5 mr-2" />
               联系患者
             </Button>
-            <Button variant="outline" className="rounded-xl py-3 border-gray-200 text-gray-700 hover:bg-gray-50" size="lg">
+            <Button 
+              variant="outline" 
+              className="rounded-xl py-3 border-gray-200 text-gray-700 hover:bg-gray-50" 
+              size="lg"
+              onClick={() => {
+                setRescheduleAppointment(selectedAppointment)
+                setRescheduleDate(selectedAppointment.scheduled_date)
+                setRescheduleTime(selectedAppointment.start_time)
+                setShowRescheduleModal(true)
+              }}
+            >
               <Edit className="h-5 w-5 mr-2" />
               调整时间
             </Button>
           </div>
 
-          {selectedAppointment.paymentStatus !== "paid" && (
-            <Button variant="outline" className="w-full rounded-xl py-3 border-orange-200 text-orange-700 hover:bg-orange-50" size="lg">
-              <CreditCard className="h-5 w-5 mr-2" />
-              处理付款
+          {selectedAppointment.status !== "cancelled" && selectedAppointment.status !== "completed" && (
+            <Button 
+              variant="outline" 
+              className="w-full rounded-xl py-3 border-red-200 text-red-700 hover:bg-red-50" 
+              size="lg"
+              onClick={() => handleCancelAppointment(selectedAppointment.id)}
+            >
+              <X className="h-5 w-5 mr-2" />
+              取消预约
             </Button>
           )}
         </div>
@@ -730,11 +828,14 @@ export function ScheduleManager() {
                   <Badge variant="outline" className={getStatusColor(appointment.status)}>
                     {getStatusText(appointment.status)}
                   </Badge>
-                  {appointment.payment && (
-                    <Badge variant="outline" className={getPaymentStatusColor(appointment.payment.payment_status)}>
-                      ¥{appointment.payment.amount}
-                    </Badge>
-                  )}
+                  {(() => {
+                    const packageInfo = getFamilyPackageInfo(appointment.patient_id)
+                    return packageInfo ? (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {packageInfo.packageName}
+                      </Badge>
+                    ) : null
+                  })()}
                 </div>
               </div>
 
@@ -772,27 +873,25 @@ export function ScheduleManager() {
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation()
-                      // TODO: 打开编辑对话框
+                      setRescheduleAppointment(appointment)
+                      setRescheduleDate(appointment.scheduled_date)
+                      setRescheduleTime(appointment.start_time)
+                      setShowRescheduleModal(true)
                     }}
                   >
                     调整
                   </Button>
-                  {appointment.payment?.payment_status !== "paid" && (
+                  {appointment.status !== "cancelled" && appointment.status !== "completed" && (
                     <Button 
                       size="sm" 
                       variant="outline" 
-                      className="text-orange-600 bg-transparent"
+                      className="text-red-600 bg-transparent border-red-200 hover:bg-red-50"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleUpdateAppointment(appointment.id, { 
-                          payment: { 
-                            ...appointment.payment, 
-                            payment_status: 'paid' 
-                          } 
-                        })
+                        handleCancelAppointment(appointment.id)
                       }}
                     >
-                      收款
+                      取消
                     </Button>
                   )}
                 </div>
@@ -957,6 +1056,134 @@ export function ScheduleManager() {
                 disabled={!newAppointment.start_time || newAppointment.duration_minutes === 0 || newAppointment.patient_id === 0}
               >
                 创建预约
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 重新安排预约对话框 */}
+      <Dialog open={showRescheduleModal} onOpenChange={setShowRescheduleModal}>
+        <DialogContent className="max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-center text-gray-900 mb-4">
+              调整预约时间
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 p-4">
+            {rescheduleAppointment && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="text-sm text-gray-600 mb-2">当前预约</div>
+                <div className="font-medium">{rescheduleAppointment.patient?.name || `患者ID: ${rescheduleAppointment.patient_id}`}</div>
+                <div className="text-sm text-gray-600">{rescheduleAppointment.scheduled_date} {rescheduleAppointment.start_time}</div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reschedule-date">新的日期</Label>
+                <Input
+                  id="reschedule-date"
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="reschedule-time">新的时间</Label>
+                <Input
+                  id="reschedule-time"
+                  type="time"
+                  value={rescheduleTime}
+                  onChange={(e) => setRescheduleTime(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1 bg-transparent"
+                onClick={() => setShowRescheduleModal(false)}
+              >
+                取消
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  if (rescheduleAppointment && rescheduleDate && rescheduleTime) {
+                    handleRescheduleAppointment(rescheduleAppointment.id, {
+                      date: rescheduleDate,
+                      time: rescheduleTime
+                    })
+                  }
+                }}
+                disabled={!rescheduleDate || !rescheduleTime}
+              >
+                确认调整
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 取消预约确认对话框 */}
+      <Dialog open={showCancelConfirmModal} onOpenChange={setShowCancelConfirmModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              确认取消预约
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="font-medium text-red-800 mb-2">取消预约信息</h4>
+              {cancelAppointment && (
+                <div className="space-y-2 text-sm text-red-700">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>患者：{cancelAppointment.patient?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>时间：{cancelAppointment.scheduled_date} {cancelAppointment.start_time}</span>
+                  </div>
+                  {cancelAppointment.notes && (
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5" />
+                      <span>备注：{cancelAppointment.notes}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <p className="text-sm text-gray-600">
+              确认要取消这个预约吗？此操作无法撤销。
+            </p>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowCancelConfirmModal(false)
+                  setCancelAppointment(null)
+                }}
+              >
+                不取消
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={confirmCancelAppointment}
+              >
+                确认取消
               </Button>
             </div>
           </div>
