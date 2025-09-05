@@ -684,22 +684,18 @@ export function ScheduleManager() {
 
       <Card className="shadow-none border-0 bg-white/80 backdrop-blur-sm rounded-2xl">
         <CardContent className="p-6">
-          <div className={`grid grid-cols-4 gap-4 text-center`}>
+          <div className={`grid grid-cols-3 gap-4 text-center`}>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4">
-              <div className="text-2xl font-bold text-blue-600">4</div>
+              <div className="text-2xl font-bold text-blue-600">{appointments.length}</div>
               <div className="text-xs text-blue-700 mt-1">总预约</div>
             </div>
             <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl p-4">
-              <div className="text-2xl font-bold text-indigo-600">1</div>
+              <div className="text-2xl font-bold text-indigo-600">{appointments.filter(app => app.status === 'scheduled' || app.status === 'confirmed').length}</div>
               <div className="text-xs text-indigo-700 mt-1">进行中</div>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4">
-              <div className="text-2xl font-bold text-green-600">1</div>
+              <div className="text-2xl font-bold text-green-600">{appointments.filter(app => app.status === 'completed').length}</div>
               <div className="text-xs text-green-700 mt-1">已完成</div>
-            </div>
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4">
-              <div className="text-2xl font-bold text-amber-600">2</div>
-              <div className="text-xs text-amber-700 mt-1">待收款</div>
             </div>
           </div>
         </CardContent>
