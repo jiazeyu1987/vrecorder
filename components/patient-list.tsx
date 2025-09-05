@@ -12,7 +12,8 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { WechatPatientHeader } from "@/components/wechat-patient-header"
 import { usePatientData } from "@/hooks/use-patient-data"
 import { toast } from "sonner"
-import type { CreateFamilyRequest, CreateMemberRequest } from "@/lib/api"
+import type { CreateFamilyRequest, CreateMemberRequest, ServicePackage } from "@/lib/api"
+import { getSystemDefaultPackages } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   Users,
@@ -174,7 +175,7 @@ export function PatientList() {
         gender: "",
         relationship: "户主",
         conditions: "",
-        packageType: "基础套餐",
+        packageType: "",
       },
     ],
   })
@@ -188,7 +189,7 @@ export function PatientList() {
     gender: "",
     relationship: "",
     conditions: "",
-    packageType: "基础套餐",
+    packageType: "",
     paymentStatus: "normal",
     phone: "",
     medications: ""
@@ -203,8 +204,56 @@ export function PatientList() {
     audioNotes: [],
     status: "draft",
   })
+  
+  // 服务套餐状态
+  const [servicePackages, setServicePackages] = useState<ServicePackage[]>([])
+  const [loadingPackages, setLoadingPackages] = useState(true)
+  
+  // 加载服务套餐数据
+  useEffect(() => {
+    const loadServicePackages = async () => {
+      try {
+        setLoadingPackages(true)
+        const response = await getSystemDefaultPackages()
+        if (response.code === 200) {
+          setServicePackages(response.data)
+        } else {
+          console.error('Failed to load service packages:', response.message)
+          toast.error('获取服务套餐失败')
+        }
+      } catch (error) {
+        console.error('Error loading service packages:', error)
+        toast.error('获取服务套餐失败')
+      } finally {
+        setLoadingPackages(false)
+      }
+    }
+    
+    loadServicePackages()
+  }, [])
+
+  // 设置默认套餐值
+  useEffect(() => {
+    if (servicePackages.length > 0) {
+      const defaultPackage = servicePackages[0].name
+      
+      // 更新新家庭成员默认套餐
+      setNewFamily(prev => ({
+        ...prev,
+        members: prev.members.map(member => 
+          member.packageType === "" ? { ...member, packageType: defaultPackage } : member
+        )
+      }))
+      
+      // 更新新成员默认套餐
+      setNewMember(prev => 
+        prev.packageType === "" ? { ...prev, packageType: defaultPackage } : prev
+      )
+    }
+  }, [servicePackages])
 
   const addFamilyMember = () => {
+    const defaultPackage = servicePackages.length > 0 ? servicePackages[0].name : ""
     setNewFamily((prev) => ({
       ...prev,
       members: [
@@ -215,7 +264,7 @@ export function PatientList() {
           gender: "",
           relationship: "",
           conditions: "",
-          packageType: "基础套餐",
+          packageType: defaultPackage,
         },
       ],
     }))
@@ -276,7 +325,7 @@ export function PatientList() {
           gender: "",
           relationship: "户主",
           conditions: "",
-          packageType: "基础套餐",
+          packageType: servicePackages.length > 0 ? servicePackages[0].name : "",
         },
       ],
     })
@@ -572,7 +621,7 @@ export function PatientList() {
         gender: "",
         relationship: "",
         conditions: "",
-        packageType: "基础套餐",
+        packageType: servicePackages.length > 0 ? servicePackages[0].name : "",
         paymentStatus: "normal",
         phone: "",
         medications: ""
@@ -1017,9 +1066,15 @@ export function PatientList() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="基础套餐">基础套餐</SelectItem>
-                      <SelectItem value="标准套餐">标准套餐</SelectItem>
-                      <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                      {loadingPackages ? (
+                        <SelectItem value="" disabled>加载中...</SelectItem>
+                      ) : (
+                        servicePackages.map((pkg) => (
+                          <SelectItem key={pkg.id} value={pkg.name}>
+                            {pkg.name} - ¥{pkg.price}/月
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1877,9 +1932,15 @@ export function PatientList() {
                       <SelectValue placeholder="选择套餐" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="基础套餐">基础套餐</SelectItem>
-                      <SelectItem value="标准套餐">标准套餐</SelectItem>
-                      <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                      {loadingPackages ? (
+                        <SelectItem value="" disabled>加载中...</SelectItem>
+                      ) : (
+                        servicePackages.map((pkg) => (
+                          <SelectItem key={pkg.id} value={pkg.name}>
+                            {pkg.name} - ¥{pkg.price}/月
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2003,16 +2064,22 @@ export function PatientList() {
                 <div className="space-y-1">
                   <Label className="text-xs text-gray-600">套餐类型</Label>
                   <Select
-                    value={newMember.packageType || "基础套餐"}
+                    value={newMember.packageType || (servicePackages.length > 0 ? servicePackages[0].name : "")}
                     onValueChange={(value) => updateNewMember("packageType", value)}
                   >
                     <SelectTrigger className="border-green-200 bg-green-50/30 rounded-lg focus:bg-white">
                       <SelectValue placeholder="选择套餐" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="基础套餐">基础套餐</SelectItem>
-                      <SelectItem value="标准套餐">标准套餐</SelectItem>
-                      <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                      {loadingPackages ? (
+                        <SelectItem value="" disabled>加载中...</SelectItem>
+                      ) : (
+                        servicePackages.map((pkg) => (
+                          <SelectItem key={pkg.id} value={pkg.name}>
+                            {pkg.name} - ¥{pkg.price}/月
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -2076,7 +2143,7 @@ export function PatientList() {
                     gender: "",
                     relationship: "",
                     conditions: "",
-                    packageType: "基础套餐",
+                    packageType: servicePackages.length > 0 ? servicePackages[0].name : "",
                     paymentStatus: "normal",
                     phone: "",
                     medications: ""
@@ -3116,9 +3183,15 @@ export function PatientList() {
                                 <SelectValue placeholder="选择套餐" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="基础套餐">基础套餐</SelectItem>
-                                <SelectItem value="标准套餐">标准套餐</SelectItem>
-                                <SelectItem value="VIP套餐">VIP套餐</SelectItem>
+                                {loadingPackages ? (
+                                  <SelectItem value="" disabled>加载中...</SelectItem>
+                                ) : (
+                                  servicePackages.map((pkg) => (
+                                    <SelectItem key={pkg.id} value={pkg.name}>
+                                      {pkg.name} - ¥{pkg.price}/月
+                                    </SelectItem>
+                                  ))
+                                )}
                               </SelectContent>
                             </Select>
                           </div>

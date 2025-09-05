@@ -515,3 +515,48 @@ export const completeAppointment = async (appointmentId: number): Promise<Appoin
 export const getServiceTypes = async (): Promise<ServiceTypesResponse> => {
   return apiRequest('/service-types')
 }
+
+// ========== 服务套餐 API ==========
+
+export interface ServicePackage {
+  id: number
+  name: string
+  description: string
+  price: number
+  duration_days: number
+  service_frequency: number
+  target_users: string
+  staff_level: string
+  hospital_level: string
+  service_time: string
+  service_content: string[]
+  additional_services: string[]
+  monitoring_items: string[]
+  report_frequency: string
+  gifts_included: string[]
+  package_level: number
+  is_active: boolean
+  is_system_default: boolean
+  created_at: string
+}
+
+export interface ServicePackageResponse {
+  code: number
+  message: string
+  data: ServicePackage[]
+}
+
+// 获取所有服务套餐
+export const getServicePackages = async (): Promise<ServicePackageResponse> => {
+  return apiRequest('/service-packages')
+}
+
+// 获取系统默认的10级服务套餐
+export const getSystemDefaultPackages = async (): Promise<ServicePackageResponse> => {
+  return apiRequest('/service-packages/system-defaults')
+}
+
+// 获取服务套餐详情
+export const getServicePackageDetail = async (packageId: number): Promise<{code: number, message: string, data: ServicePackage}> => {
+  return apiRequest(`/service-packages/${packageId}`)
+}
