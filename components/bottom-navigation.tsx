@@ -13,16 +13,10 @@ interface BottomNavigationProps {
 
 const navItems = [
   {
-    id: "home",
+    id: "schedule",
     label: "首页",
     icon: Home,
     href: "/",
-  },
-  {
-    id: "schedule",
-    label: "日程",
-    icon: Calendar,
-    href: "/schedule",
   },
   {
     id: "records",
@@ -63,10 +57,9 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
           const isActive = activeTab === item.id || pathname === item.href
           const isRecordsTab = item.id === "records"
           const isPatientsTab = item.id === "patients"
-          const isHomeTab = item.id === "home"
           const isScheduleTab = item.id === "schedule"
           const isProfileTab = item.id === "profile"
-          const isWechatStyleTab = isHomeTab || isScheduleTab || isProfileTab || isRecordsTab || isPatientsTab
+          const isWechatStyleTab = isScheduleTab || isProfileTab || isRecordsTab || isPatientsTab
 
           return (
             <Link
@@ -90,10 +83,8 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                       className={cn(
                         "relative flex items-center justify-center transition-all duration-300",
                         "rounded-full border-2 border-white/50 shadow-lg",
-                        // 首页页签使用橙色渐变（微信风格的温暖色调）
-                        isHomeTab && "bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600",
-                        // 日程页签使用紫色渐变（微信风格的专业色调）
-                        isScheduleTab && "bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600",
+                        // 首页页签（原日程）使用橙色渐变（微信风格的温暖色调）
+                        isScheduleTab && "bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600",
                         // 我的页签使用灰色渐变（微信风格的个人中心色调）
                         isProfileTab && "bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600",
                         // 记录页签使用绿色渐变
@@ -105,15 +96,13 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                         // 激活状态效果
                         isActive ? [
                           "shadow-xl scale-110 transform",
-                          isHomeTab && "shadow-orange-500/60 ring-3 ring-orange-300/70 ring-offset-2 ring-offset-white",
-                          isScheduleTab && "shadow-purple-500/60 ring-3 ring-purple-300/70 ring-offset-2 ring-offset-white",
+                          isScheduleTab && "shadow-orange-500/60 ring-3 ring-orange-300/70 ring-offset-2 ring-offset-white",
                           isProfileTab && "shadow-gray-500/60 ring-3 ring-gray-300/70 ring-offset-2 ring-offset-white",
                           isRecordsTab && "shadow-green-500/60 ring-3 ring-green-300/70 ring-offset-2 ring-offset-white",
                           isPatientsTab && "shadow-blue-500/60 ring-3 ring-blue-300/70 ring-offset-2 ring-offset-white",
                         ] : [
                           "hover:scale-105 hover:shadow-xl transform",
-                          isHomeTab && "hover:shadow-orange-500/50 hover:ring-2 hover:ring-orange-300/50 hover:ring-offset-1 hover:ring-offset-white",
-                          isScheduleTab && "hover:shadow-purple-500/50 hover:ring-2 hover:ring-purple-300/50 hover:ring-offset-1 hover:ring-offset-white",
+                          isScheduleTab && "hover:shadow-orange-500/50 hover:ring-2 hover:ring-orange-300/50 hover:ring-offset-1 hover:ring-offset-white",
                           isProfileTab && "hover:shadow-gray-500/50 hover:ring-2 hover:ring-gray-300/50 hover:ring-offset-1 hover:ring-offset-white",
                           isRecordsTab && "hover:shadow-green-500/50 hover:ring-2 hover:ring-green-300/50 hover:ring-offset-1 hover:ring-offset-white",
                           isPatientsTab && "hover:shadow-blue-500/50 hover:ring-2 hover:ring-blue-300/50 hover:ring-offset-1 hover:ring-offset-white",
@@ -134,16 +123,14 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                           <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse" />
                           <div className={cn(
                             "absolute -inset-2 rounded-full blur-lg animate-pulse opacity-70",
-                            isHomeTab && "bg-gradient-to-br from-orange-300/40 to-orange-500/40",
-                            isScheduleTab && "bg-gradient-to-br from-purple-300/40 to-purple-500/40",
+                            isScheduleTab && "bg-gradient-to-br from-orange-300/40 to-orange-500/40",
                             isProfileTab && "bg-gradient-to-br from-gray-300/40 to-gray-500/40",
                             isRecordsTab && "bg-gradient-to-br from-green-300/40 to-green-500/40",
                             isPatientsTab && "bg-gradient-to-br from-blue-300/40 to-blue-500/40"
                           )} />
                           <div className={cn(
                             "absolute -inset-1 rounded-full blur-md animate-pulse opacity-50",
-                            isHomeTab && "bg-gradient-to-br from-orange-400/30 to-orange-600/30",
-                            isScheduleTab && "bg-gradient-to-br from-purple-400/30 to-purple-600/30",
+                            isScheduleTab && "bg-gradient-to-br from-orange-400/30 to-orange-600/30",
                             isProfileTab && "bg-gradient-to-br from-gray-400/30 to-gray-600/30",
                             isRecordsTab && "bg-gradient-to-br from-green-400/30 to-green-600/30",
                             isPatientsTab && "bg-gradient-to-br from-blue-400/30 to-blue-600/30"
@@ -152,7 +139,7 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                       )}
                       
                       {/* 新消息提示小红点 - 首页和患者页签专用 */}
-                      {(isHomeTab || isPatientsTab) && !isActive && (
+                      {(isScheduleTab || isPatientsTab) && !isActive && (
                         <div className={cn(
                           "absolute bg-gradient-to-r from-red-500 to-red-600 rounded-full border-2 border-white shadow-lg",
                           "animate-pulse",
@@ -162,7 +149,7 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                         </div>
                       )}
                       
-                      {/* 日程页签的特殊提示小徽章 */}
+                      {/* 首页页签的特殊提示小徽章 */}
                       {isScheduleTab && !isActive && (
                         <div className={cn(
                           "absolute bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full border-2 border-white shadow-lg",
@@ -183,15 +170,13 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                           deviceType === "mobile" ? "text-xs" : "text-[10px]",
                           isActive ? [
                             "scale-105 font-semibold transform",
-                            isHomeTab && "text-orange-600",
-                            isScheduleTab && "text-purple-600",
+                            isScheduleTab && "text-orange-600",
                             isProfileTab && "text-gray-700",
                             isRecordsTab && "text-green-600",
                             isPatientsTab && "text-blue-600",
                           ] : [
                             "text-gray-600",
-                            isHomeTab && "group-hover:text-orange-500",
-                            isScheduleTab && "group-hover:text-purple-500",
+                            isScheduleTab && "group-hover:text-orange-500",
                             isProfileTab && "group-hover:text-gray-500",
                             isRecordsTab && "group-hover:text-green-500",
                             isPatientsTab && "group-hover:text-blue-500",
@@ -206,8 +191,7 @@ export function BottomNavigation({ activeTab }: BottomNavigationProps) {
                         <div className={cn(
                           "rounded-full mt-1 animate-pulse",
                           deviceType === "mobile" ? "w-1.5 h-1.5" : "w-1 h-1",
-                          isHomeTab && "bg-orange-500 shadow-lg shadow-orange-300/50",
-                          isScheduleTab && "bg-purple-500 shadow-lg shadow-purple-300/50",
+                          isScheduleTab && "bg-orange-500 shadow-lg shadow-orange-300/50",
                           isProfileTab && "bg-gray-500 shadow-lg shadow-gray-300/50",
                           isRecordsTab && "bg-green-500 shadow-lg shadow-green-300/50",
                           isPatientsTab && "bg-blue-500 shadow-lg shadow-blue-300/50"

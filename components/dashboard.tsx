@@ -64,7 +64,7 @@ export function Dashboard() {
   }
 
   const handleScheduleAppointment = () => {
-    router.push("/schedule")
+    router.push("/")
   }
 
   const handleUploadPhoto = () => {
@@ -84,11 +84,11 @@ export function Dashboard() {
   }
 
   const handleViewAllSchedule = () => {
-    router.push("/schedule")
+    router.push("/")
   }
 
   const handleAddNewAppointment = () => {
-    router.push("/schedule")
+    router.push("/")
   }
 
   const handleTaskClick = (taskType: string) => {
@@ -496,7 +496,7 @@ export function Dashboard() {
               <Button className="flex-1" onClick={() => handleStartService(selectedAppointment)}>
                 开始服务
               </Button>
-              <Button variant="outline" onClick={() => router.push("/schedule")}>
+              <Button variant="outline" onClick={() => router.push("/")}>
                 查看日程
               </Button>
               <Button variant="outline" onClick={() => setShowAppointmentDetails(false)}>
