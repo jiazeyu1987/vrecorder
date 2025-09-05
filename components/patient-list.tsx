@@ -252,6 +252,8 @@ export function PatientList() {
           gender: "",
           relationship: "",
           conditions: "",
+          medications: "",
+          phone: "",
         },
       ],
     }))
@@ -2844,58 +2846,33 @@ export function PatientList() {
                           )}
                         </div>
 
-                        <div className={cn(
-                          "grid gap-3",
-                          deviceType === "desktop" ? "grid-cols-3" : deviceType === "tablet" ? "grid-cols-2" : "grid-cols-1"
-                        )}>
-                          <div className="space-y-1.5">
-                            <label className={cn(
-                              "font-medium text-gray-600",
-                              deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                            )}>姓名</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">姓名</Label>
                             <Input
-                              value={member.name}
+                              value={member.name || ""}
                               onChange={(e) => updateFamilyMember(index, "name", e.target.value)}
-                              placeholder="姓名"
-                              className={cn(
-                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
-                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                                deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
-                              )}
+                              className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                              placeholder="成员姓名"
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <label className={cn(
-                              "font-medium text-gray-600",
-                              deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                            )}>年龄</label>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">年龄</Label>
                             <Input
-                              value={member.age.toString()}
+                              value={member.age?.toString() || ""}
                               onChange={(e) => updateFamilyMember(index, "age", e.target.value)}
-                              placeholder="年龄"
                               type="number"
-                              className={cn(
-                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
-                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                                deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
-                              )}
+                              className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                              placeholder="年龄"
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <label className={cn(
-                              "font-medium text-gray-600",
-                              "block",
-                              deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                            )}>性别</label>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">性别</Label>
                             <Select
-                              value={member.gender}
+                              value={member.gender || ""}
                               onValueChange={(value) => updateFamilyMember(index, "gender", value)}
                             >
-                              <SelectTrigger className={cn(
-                                "w-full border-gray-200 bg-white rounded-lg focus:bg-white",
-                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                                deviceType === "mobile" ? "h-8 text-xs px-2" : "h-9 text-sm px-3"
-                              )}>
+                              <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm">
                                 <SelectValue placeholder="选择性别" />
                               </SelectTrigger>
                               <SelectContent>
@@ -2904,44 +2881,51 @@ export function PatientList() {
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-
-                        <div className={cn(
-                          "grid gap-3 mt-3",
-                          deviceType === "desktop" ? "grid-cols-2" : "grid-cols-1"
-                        )}>
-                          <div className="space-y-1.5">
-                            <label className={cn(
-                              "font-medium text-gray-600",
-                              deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                            )}>关系</label>
-                            <Input
-                              value={member.relationship}
-                              onChange={(e) => updateFamilyMember(index, "relationship", e.target.value)}
-                              placeholder="与户主关系"
-                              className={cn(
-                                "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
-                                "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                                deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
-                              )}
-                            />
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-600">关系</Label>
+                            <Select
+                              value={member.relationship || ""}
+                              onValueChange={(value) => updateFamilyMember(index, "relationship", value)}
+                            >
+                              <SelectTrigger className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm">
+                                <SelectValue placeholder="选择关系" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="配偶">配偶</SelectItem>
+                                <SelectItem value="儿子">儿子</SelectItem>
+                                <SelectItem value="女儿">女儿</SelectItem>
+                                <SelectItem value="父亲">父亲</SelectItem>
+                                <SelectItem value="母亲">母亲</SelectItem>
+                                <SelectItem value="其他">其他</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
-
-                        <div className="mt-3 space-y-1.5">
-                          <label className={cn(
-                            "font-medium text-gray-600",
-                            deviceType === "mobile" ? "text-[10px]" : "text-xs"
-                          )}>健康状况</label>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">手机号码</Label>
                           <Input
-                            value={member.conditions}
+                            value={member.phone || ""}
+                            onChange={(e) => updateFamilyMember(index, "phone", e.target.value)}
+                            className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                            placeholder="手机号码"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">健康状况</Label>
+                          <Input
+                            value={member.conditions || ""}
                             onChange={(e) => updateFamilyMember(index, "conditions", e.target.value)}
-                            placeholder="请输入健康状况或疾病史（如：高血压、糖尿病等）"
-                            className={cn(
-                              "border-gray-200 bg-white rounded-lg focus:bg-white transition-all duration-150",
-                              "focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
-                              deviceType === "mobile" ? "h-8 text-xs" : "h-9 text-sm"
-                            )}
+                            className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                            placeholder="健康状况，多个用逗号分隔"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-600">用药情况</Label>
+                          <Input
+                            value={member.medications || ""}
+                            onChange={(e) => updateFamilyMember(index, "medications", e.target.value)}
+                            className="border-blue-200 bg-blue-50/30 rounded-lg focus:bg-white text-sm"
+                            placeholder="用药情况，多个用逗号分隔"
                           />
                         </div>
                       </div>

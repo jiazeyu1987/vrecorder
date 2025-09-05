@@ -137,6 +137,7 @@ export interface CreateFamilyRequest {
     relationship: string
     conditions: string
     medications?: string
+    phone?: string
   }>
 }
 
