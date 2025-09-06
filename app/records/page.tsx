@@ -196,6 +196,10 @@ export default function RecordsPage() {
   const service = searchParams.get("service")
   const time = searchParams.get("time")
   const address = searchParams.get("address")
+
+  console.log("[Records] URL参数:", {
+    patientId, familyId, familyName, patientName, service, time, address
+  })
   const appointmentId = searchParams.get("appointmentId")
   const taskType = searchParams.get("taskType")
 
@@ -352,6 +356,8 @@ export default function RecordsPage() {
   useEffect(() => {
     setCurrentFamilyHealth(getFamilyMembersForPatient(selectedFamily))
   }, [selectedFamily])
+
+  // URL参数自动选择功能现在由FamilySelector组件处理
 
   const [isEditingFamilyHealth, setIsEditingFamilyHealth] = useState(true) // Default to true so it's always expanded
 
@@ -942,6 +948,8 @@ export default function RecordsPage() {
           selectedFamilyId={selectedFamilyId}
           onFamilySelect={handleFamilySelect}
           className="mb-4"
+          autoSelectId={familyId || undefined}
+          autoSelectName={familyName || undefined}
         />
 
         {/* Current Appointment Info - 微信小程序风格 */}

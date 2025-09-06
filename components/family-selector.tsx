@@ -12,13 +12,19 @@ interface FamilySelectorProps {
   selectedFamilyId?: string
   onFamilySelect: (familyId: string, family: Family | null) => void
   className?: string
+  autoSelectId?: string // 自动选择的家庭ID
+  autoSelectName?: string // 自动选择的家庭名称
 }
 
-export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: FamilySelectorProps) {
+export function FamilySelector({ selectedFamilyId, onFamilySelect, className, autoSelectId, autoSelectName }: FamilySelectorProps) {
   const deviceType = useDeviceType()
   const [families, setFamilies] = useState<Family[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  console.log("[FamilySelector] Props:", {
+    selectedFamilyId, autoSelectId, autoSelectName, familiesCount: families.length
+  })
 
   // 获取家庭列表
   const fetchFamilies = async () => {
@@ -46,6 +52,53 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
   useEffect(() => {
     fetchFamilies()
   }, [])
+
+  // 在家庭数据加载完成后，如果有autoSelectId，自动选择对应的家庭
+  useEffect(() => {
+    console.log("[FamilySelector] 自动选择检查:", {
+      autoSelectId,
+      autoSelectName,
+      familiesCount: families.length,
+      selectedFamilyId,
+      familyIds: families.map(f => f.id),
+      familyDetails: families.map(f => ({id: f.id, name: f.householdHead}))
+    })
+    
+    if ((autoSelectId || autoSelectName) && families.length > 0 && !selectedFamilyId) {
+      let foundFamily = null
+      
+      // 优先使用名称匹配
+      if (autoSelectName) {
+        foundFamily = families.find(f => f.householdHead === autoSelectName)
+        console.log("[FamilySelector] 名称匹配结果:", { foundFamily, searchName: autoSelectName })
+      }
+      
+      // 如果名称匹配失败，尝试ID匹配
+      if (!foundFamily && autoSelectId) {
+        foundFamily = families.find(f => f.id === autoSelectId)
+        console.log("[FamilySelector] ID匹配结果:", { foundFamily, searchId: autoSelectId })
+        
+        // 尝试数字类型匹配
+        if (!foundFamily) {
+          foundFamily = families.find(f => f.id.toString() === autoSelectId || f.id === parseInt(autoSelectId))
+          console.log("[FamilySelector] 数字匹配结果:", { foundFamily, searchId: autoSelectId })
+        }
+      }
+      
+      if (foundFamily) {
+        console.log("[FamilySelector] 自动选择家庭:", foundFamily)
+        onFamilySelect(foundFamily.id, foundFamily)
+      } else {
+        // 如果都没找到，选择第一个家庭作为默认选项
+        console.log("[FamilySelector] 所有匹配都失败，选择第一个家庭作为默认")
+        const firstFamily = families[0]
+        if (firstFamily) {
+          console.log("[FamilySelector] 选择默认家庭:", firstFamily)
+          onFamilySelect(firstFamily.id, firstFamily)
+        }
+      }
+    }
+  }, [autoSelectId, autoSelectName, families, selectedFamilyId, onFamilySelect])
 
   const handleFamilySelect = (familyId: string) => {
     const selectedFamily = families.find(f => f.id === familyId) || null

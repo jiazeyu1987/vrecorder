@@ -488,14 +488,25 @@ export function ScheduleManager() {
       setShowStartConfirmModal(false)
       setStartAppointment(null)
       
-      // 准备跳转参数
+      // 准备跳转参数 - 尝试使用正确的 family ID
+      // 首先尝试使用 patient.family.id，如果没有则使用 patient_id 作为后备
+      const familyId = startAppointment.patient?.family?.id?.toString() || startAppointment.patient_id?.toString() || '';
+      
       const params = new URLSearchParams({
-        familyId: startAppointment.patient?.family?.id?.toString() || '',
+        familyId,
         familyName: startAppointment.patient?.family?.name || startAppointment.patient?.name || '',
         patientName: startAppointment.patient?.name || '',
         service: startAppointment.service_type?.name || '',
         time: startAppointment.start_time,
         address: startAppointment.patient?.family?.address || '',
+        appointmentId: startAppointment.id.toString()
+      })
+      
+      console.log("🚀 准备跳转到记录页面，参数:", {
+        familyId,
+        patientFamilyId: startAppointment.patient?.family?.id,
+        patientId: startAppointment.patient_id,
+        familyName: startAppointment.patient?.family?.name || startAppointment.patient?.name || '',
         appointmentId: startAppointment.id.toString()
       })
       
@@ -1021,13 +1032,13 @@ export function ScheduleManager() {
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex-1 text-green-600 bg-transparent"
+                    className="flex-1 text-yellow-600 bg-yellow-50 border-yellow-300 hover:bg-yellow-100"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleCompleteAppointment(appointment.id)
                     }}
                   >
-                    完成
+                    进行中
                   </Button>
                   <Button 
                     size="sm" 
@@ -1035,7 +1046,7 @@ export function ScheduleManager() {
                     className="text-orange-600 bg-transparent"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleUpdateAppointment(appointment.id, { status: 'cancelled' })
+                      handleUpdateAppointment(appointment.id, { status: 'scheduled' })
                     }}
                   >
                     取消
