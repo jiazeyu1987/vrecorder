@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import { FamilySelector } from "@/components/family-selector"
 import type { Family } from "@/lib/api"
+import { completeAppointment } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import {
   FileText,
@@ -736,6 +737,22 @@ export default function RecordsPage() {
         localStorage.setItem("familyHealthRecords", JSON.stringify(updatedFamilyRecords))
         console.log("[Records] 健康记录已保存:", newFamilyHealthRecord)
 
+        // 如果是通过日程开始的录音，自动完成预约
+        if (appointmentId) {
+          try {
+            console.log("[Records] MediaRecorder.onstop - 检测到通过日程开始的录音，自动完成预约ID:", appointmentId)
+            completeAppointment(parseInt(appointmentId)).then(() => {
+              console.log("[Records] MediaRecorder.onstop - 预约已自动标记为完成")
+            }).catch((error) => {
+              console.error("[Records] MediaRecorder.onstop - 自动完成预约失败:", error)
+            })
+          } catch (error) {
+            console.error("[Records] MediaRecorder.onstop - 自动完成预约失败:", error)
+          }
+        } else {
+          console.log("[Records] MediaRecorder.onstop - 非通过日程开始的录音，不自动完成预约")
+        }
+
         // Cleanup
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((track) => track.stop())
@@ -809,12 +826,25 @@ export default function RecordsPage() {
         setLocalRecords(updatedLocalRecords)
         saveRecordsToStorage(updatedLocalRecords)
 
-        // 注意：不要自动标记预约为完成，让用户手动操作
-        console.log("[v0] 健康记录已保存，但预约状态需要用户手动更新")
+        // 如果是通过日程开始的录音，自动完成预约
+        if (appointmentId) {
+          try {
+            console.log("[Records] 检测到通过日程开始的录音，自动完成预约ID:", appointmentId)
+            await completeAppointment(parseInt(appointmentId))
+            console.log("[Records] 预约已自动标记为完成")
+            alert("记录已完成并保存到本地！预约状态已自动更新为完成。")
+          } catch (error) {
+            console.error("[Records] 自动完成预约失败:", error)
+            console.log("[v0] 健康记录已保存，但预约状态更新失败")
+            alert("记录已完成并保存到本地！但预约状态更新失败，请手动在日程中标记为完成。")
+          }
+        } else {
+          console.log("[v0] 非通过日程开始的录音，不自动完成预约")
+          alert("记录已完成并保存到本地！")
+        }
 
         setCurrentRecord(null)
         setCurrentFamilyHealth(getFamilyMembersForPatient(selectedFamily))
-        alert("记录已完成并保存到本地！")
       }
     }
 
