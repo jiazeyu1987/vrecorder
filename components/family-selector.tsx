@@ -101,12 +101,16 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
   }, [autoSelectId, autoSelectName, families, selectedFamilyId, onFamilySelect])
 
   const handleFamilySelect = (familyId: string) => {
-    const selectedFamily = families.find(f => f.id === familyId) || null
-    onFamilySelect(familyId, selectedFamily)
+    if (familyId === "none") {
+      onFamilySelect("none", null)
+    } else {
+      const selectedFamily = families.find(f => f.id === familyId) || null
+      onFamilySelect(familyId, selectedFamily)
+    }
   }
 
   const getSelectedFamilyInfo = () => {
-    if (!selectedFamilyId) return null
+    if (!selectedFamilyId || selectedFamilyId === "none") return null
     return families.find(f => f.id === selectedFamilyId) || null
   }
 
@@ -159,6 +163,19 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
               <SelectValue placeholder={isLoading ? "加载中..." : "请选择家庭"} />
             </SelectTrigger>
             <SelectContent className="max-h-60">
+              {/* 无选项 */}
+              <SelectItem value="none">
+                <div className="flex items-center gap-3 w-full">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-500">无</div>
+                    <div className="text-sm text-gray-400">不选择任何家庭，显示所有记录</div>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">
+                    <span>-</span>
+                  </div>
+                </div>
+              </SelectItem>
+              
               {families.map((family) => (
                 <SelectItem key={family.id} value={family.id}>
                   <div className="flex items-center gap-3 w-full">

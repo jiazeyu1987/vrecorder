@@ -268,7 +268,12 @@ export default function RecordsPage() {
   const [refreshKey, setRefreshKey] = useState<number>(0)
   const [isChangingFamily, setIsChangingFamily] = useState<boolean>(false)
 
-  const getCurrentAppointmentData = (): CurrentAppointment => {
+  const getCurrentAppointmentData = (): CurrentAppointment | null => {
+    // 如果选择了"无"，返回null
+    if (selectedFamilyId === "none") {
+      return null
+    }
+    
     // 如果选择了家庭，优先使用选择的家庭信息
     if (selectedFamily) {
       return {
@@ -633,9 +638,10 @@ export default function RecordsPage() {
         }
 
         // Save family health record - 无论是否选择家庭都创建记录
+        const appointmentData = currentAppointment
         const newFamilyHealthRecord: FamilyHealthRecord = {
           recordId: Date.now().toString(),
-          date: currentAppointment.date,
+          date: appointmentData?.date || new Date().toISOString().split("T")[0],
           time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
           familyMembers: currentFamilyHealth.length > 0 ? currentFamilyHealth : [
             // 如果没有选择家庭，创建一个默认的成员记录
@@ -681,14 +687,15 @@ export default function RecordsPage() {
       setRecordingTime(0)
 
       // Initialize current record
+      const appointmentData = currentAppointment
       setCurrentRecord({
         id: Date.now().toString(),
-        date: currentAppointment.date,
+        date: appointmentData?.date || new Date().toISOString().split("T")[0],
         time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
-        patientName: currentAppointment.patientName,
-        patientAge: currentAppointment.patientAge,
-        serviceType: currentAppointment.serviceType,
-        location: currentAppointment.location,
+        patientName: appointmentData?.patientName || "未指定患者",
+        patientAge: appointmentData?.patientAge || 0,
+        serviceType: appointmentData?.serviceType || "未指定服务",
+        location: appointmentData?.location || "未指定地址",
         vitals: {},
         observations: "",
         photos: [],
@@ -718,12 +725,13 @@ export default function RecordsPage() {
       setIsRecording(false)
 
       if (currentRecord) {
+        const appointmentData = currentAppointment
         const completedRecord: HealthRecord = {
           id: Date.now().toString(),
-          patientName: currentAppointment.patientName,
+          patientName: appointmentData?.patientName || "未指定患者",
           date: new Date().toISOString().split("T")[0],
           time: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
-          serviceType: currentAppointment.serviceType,
+          serviceType: appointmentData?.serviceType || "未指定服务",
           ...currentRecord,
           familyHealthData: currentFamilyHealth.filter(
             (member) => member.bloodPressure || member.bloodSugar || member.bowelMovement || member.sleepQuality,
@@ -1018,7 +1026,8 @@ export default function RecordsPage() {
 
   // 根据选择的家庭过滤历史记录
   const getFilteredHistoryRecords = () => {
-    if (!historySelectedFamily) {
+    // 如果选择了"无"，显示所有记录
+    if (historySelectedFamilyId === "none" || !historySelectedFamily) {
       return familyHealthRecords
     }
     
@@ -1189,16 +1198,18 @@ export default function RecordsPage() {
       <div className={`flex justify-center ${deviceType === "mobile" ? "py-4 px-4" : deviceType === "tablet" ? "py-5 px-5" : "py-6 px-6"}`}>
         <Button
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={audioPermission === "denied"}
+          disabled={audioPermission === "denied" || selectedFamilyId === "none"}
           className={`
             relative overflow-hidden transition-all duration-500 transform hover:scale-105 active:scale-95
             ${deviceType === "mobile" ? "w-20 h-20" : deviceType === "tablet" ? "w-24 h-24" : "w-28 h-28"}
             rounded-full shadow-2xl border-4 border-white/30 backdrop-blur-sm
             ${isRecording 
               ? "bg-gradient-to-br from-red-400 via-red-500 to-red-600 hover:from-red-500 hover:via-red-600 hover:to-red-700 shadow-red-500/50 animate-pulse" 
-              : "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 shadow-blue-500/50"
+              : selectedFamilyId === "none"
+                ? "bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 shadow-gray-400/30"
+                : "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 shadow-blue-500/50"
             }
-            ${audioPermission === "denied" ? "opacity-50 cursor-not-allowed" : "hover:shadow-3xl"}
+            ${(audioPermission === "denied" || selectedFamilyId === "none") ? "opacity-50 cursor-not-allowed" : "hover:shadow-3xl"}
           `}
         >
           <div className="flex flex-col items-center justify-center text-white relative z-10">
@@ -1206,6 +1217,13 @@ export default function RecordsPage() {
               <>
                 <Square className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
                 <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>停止</span>
+              </>
+            ) : selectedFamilyId === "none" ? (
+              <>
+                <Mic className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1 opacity-50`} />
+                <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"} opacity-75`}>
+                  {deviceType === "mobile" ? "选择家庭" : "请选择家庭"}
+                </span>
               </>
             ) : (
               <>
@@ -1264,82 +1282,106 @@ export default function RecordsPage() {
         />
 
         {/* Current Appointment Info - 微信小程序风格 */}
-        <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <CardHeader className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-            <div className="flex items-center gap-2">
-              <Calendar className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
-              <span className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
-                当前服务信息
-              </span>
-            </div>
-            {isChangingFamily && (
-              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                已切换家庭
+        {currentAppointment ? (
+          <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
+            <CardHeader className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
+              <div className="flex items-center gap-2">
+                <Calendar className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
+                <span className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
+                  当前服务信息
+                </span>
               </div>
-            )}
-          </CardHeader>
-          <CardContent className={`${deviceType === "mobile" ? "px-4 py-4" : "px-6 py-5"}`}>
-            {/* 家庭信息卡片 */}
-            <div className="bg-blue-50/50 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-blue-600" />
+              {isChangingFamily && (
+                <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                  已切换家庭
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-lg">{currentAppointment.patientName}</h3>
-                  <p className="text-gray-600 text-sm">家庭户主</p>
+              )}
+            </CardHeader>
+            <CardContent className={`${deviceType === "mobile" ? "px-4 py-4" : "px-6 py-5"}`}>
+              {/* 家庭信息卡片 */}
+              <div className="bg-blue-50/50 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 text-lg">{currentAppointment.patientName}</h3>
+                    <p className="text-gray-600 text-sm">家庭户主</p>
+                  </div>
+                  <Badge className={`${getPaymentStatusColor(currentAppointment.paymentStatus)} px-3 py-1 text-xs font-medium`}>
+                    {getPaymentStatusText(currentAppointment.paymentStatus)}
+                  </Badge>
                 </div>
-                <Badge className={`${getPaymentStatusColor(currentAppointment.paymentStatus)} px-3 py-1 text-xs font-medium`}>
-                  {getPaymentStatusText(currentAppointment.paymentStatus)}
-                </Badge>
               </div>
-            </div>
 
-            {/* 服务详情 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{currentAppointment.serviceType}</p>
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    {currentAppointment.date} {currentAppointment.time}
-                  </p>
+              {/* 服务详情 */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{currentAppointment.serviceType}</p>
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      {currentAppointment.date} {currentAppointment.time}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900 leading-relaxed">{currentAppointment.location}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Package className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">{currentAppointment.packageType}</p>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900 leading-relaxed">{currentAppointment.location}</p>
-                </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
+            <CardHeader className={`bg-gradient-to-r from-gray-400 to-gray-500 text-white ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
+              <div className="flex items-center gap-2">
+                <Calendar className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
+                <span className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
+                  当前服务信息
+                </span>
               </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <Package className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{currentAppointment.packageType}</p>
+            </CardHeader>
+            <CardContent className={`${deviceType === "mobile" ? "px-4 py-4" : "px-6 py-5"}`}>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="h-8 w-8 text-gray-400" />
                 </div>
+                <p className="text-gray-500 text-lg font-medium mb-2">未选择家庭</p>
+                <p className="text-gray-400 text-sm">请从上方选择家庭以查看服务信息</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
 
-        <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <CardHeader className={`bg-gradient-to-r from-green-500 to-green-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-            <div className="flex items-center gap-2">
-              <Users className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
-              <CardTitle className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
-                家庭成员健康记录
-              </CardTitle>
-            </div>
-            {isChangingFamily && (
-              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                数据更新中...
+        {/* 家庭成员健康记录 - 仅在选择了具体家庭时显示 */}
+        {selectedFamilyId !== "none" && selectedFamily && (
+          <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
+            <CardHeader className={`bg-gradient-to-r from-green-500 to-green-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
+              <div className="flex items-center gap-2">
+                <Users className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
+                <CardTitle className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
+                  家庭成员健康记录
+                </CardTitle>
               </div>
-            )}
-          </CardHeader>
-          <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-4" : "px-6 py-5 space-y-5"}`}>
+              {isChangingFamily && (
+                <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                  数据更新中...
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-4" : "px-6 py-5 space-y-5"}`}>
             {currentFamilyHealth.map((member) => (
               <Card key={member.memberId} className="border border-green-100 bg-green-50/30 rounded-lg overflow-hidden">
                 <CardHeader className={`bg-green-50/50 border-b border-green-100 ${deviceType === "mobile" ? "px-3 py-3" : "px-4 py-3"}`}>
@@ -1428,8 +1470,9 @@ export default function RecordsPage() {
                 </CardContent>
               </Card>
             ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Family Health Records History - 微信小程序风格 */}
         {familyHealthRecords.length > 0 && (
