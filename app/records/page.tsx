@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import { FamilySelector } from "@/components/family-selector"
 import type { Family } from "@/lib/api"
+import { cn } from "@/lib/utils"
 import {
   FileText,
   Calendar,
@@ -38,6 +39,9 @@ import {
   Save,
   Users,
   Moon,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 
 interface HealthRecord {
@@ -166,6 +170,12 @@ const mockHistoricalRecords: HealthRecord[] = [
 interface FamilyMemberHealth {
   memberId: string
   memberName: string
+  memberAge?: number
+  memberGender?: string
+  memberRelationship?: string
+  memberConditions?: string[]
+  memberMedications?: string[]
+  memberPackageType?: string
   bloodPressure?: string
   bloodSugar?: string
   bowelMovement?: string
@@ -179,6 +189,8 @@ interface FamilyHealthRecord {
   time: string
   familyMembers: FamilyMemberHealth[]
   isEditable: boolean
+  familyId?: string
+  familyName?: string
 }
 
 const familyMembers = [
@@ -211,6 +223,9 @@ export default function RecordsPage() {
   const [audioPermission, setAudioPermission] = useState<"granted" | "denied" | "prompt">("prompt")
   const [uploadingRecords, setUploadingRecords] = useState<Set<string>>(new Set())
   const [familyHealthRecords, setFamilyHealthRecords] = useState<FamilyHealthRecord[]>([])
+  const [historySelectedFamilyId, setHistorySelectedFamilyId] = useState<string>("")
+  const [historySelectedFamily, setHistorySelectedFamily] = useState<Family | null>(null)
+  const [expandedRecords, setExpandedRecords] = useState<Set<string>>(new Set())
   const audioUrlRef = useRef<string | null>(null)
 
   // 基于选中的家庭生成家庭成员健康记录数据
@@ -226,10 +241,17 @@ export default function RecordsPage() {
     const result = family.members.map((member) => ({
       memberId: member.id,
       memberName: member.name,
+      memberAge: member.age,
+      memberGender: member.gender,
+      memberRelationship: member.relationship,
+      memberConditions: member.conditions,
+      memberMedications: member.medications,
+      memberPackageType: member.packageType,
       bloodPressure: "",
       bloodSugar: "",
       bowelMovement: "",
-      sleepQuality: ""
+      sleepQuality: "",
+      notes: ""
     }))
 
     console.log("[Records] 生成的家庭成员健康记录:", result)
@@ -370,7 +392,6 @@ export default function RecordsPage() {
 
   const isMobile = useIsMobile()
   const deviceType = useDeviceType()
-  const [currentTab, setCurrentTab] = useState("all")
 
   const saveRecordsToStorage = (records: HealthRecord[]) => {
     try {
@@ -408,14 +429,78 @@ export default function RecordsPage() {
   }
 
   useEffect(() => {
-    const savedFamilyRecords = localStorage.getItem("familyHealthRecords")
-    if (savedFamilyRecords) {
-      try {
-        setFamilyHealthRecords(JSON.parse(savedFamilyRecords))
-      } catch (error) {
-        console.error("[v0] Error loading family health records:", error)
+    // 创建示例记录以便测试（强制覆盖现有数据）
+    const sampleRecords: FamilyHealthRecord[] = [
+      {
+        recordId: "sample-1",
+        date: new Date().toISOString().split('T')[0],
+        time: "09:30",
+        familyId: "family-1",
+        familyName: "张三家庭",
+        isEditable: false,
+        familyMembers: [
+          {
+            memberId: "member-1",
+            memberName: "张三",
+            memberAge: 45,
+            memberGender: "男",
+            memberRelationship: "户主",
+            memberConditions: ["高血压", "糖尿病"],
+            memberMedications: ["降压药", "二甲双胍"],
+            memberPackageType: "基础套餐",
+            bloodPressure: "135/90",
+            bloodSugar: "7.2",
+            bowelMovement: "正常",
+            sleepQuality: "一般",
+            notes: "血压略高，需要调整用药剂量"
+          },
+          {
+            memberId: "member-2", 
+            memberName: "李四",
+            memberAge: 42,
+            memberGender: "女",
+            memberRelationship: "配偶",
+            memberConditions: ["轻度贫血"],
+            memberMedications: ["铁剂"],
+            memberPackageType: "标准套餐",
+            bloodPressure: "120/75",
+            bloodSugar: "5.8",
+            bowelMovement: "偶尔便秘",
+            sleepQuality: "良好",
+            notes: "整体健康状况良好，继续补铁治疗"
+          }
+        ]
+      },
+      {
+        recordId: "sample-2",
+        date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // 昨天
+        time: "14:15",
+        familyId: "family-2",
+        familyName: "王五家庭",
+        isEditable: false,
+        familyMembers: [
+          {
+            memberId: "member-3",
+            memberName: "王五",
+            memberAge: 38,
+            memberGender: "男",
+            memberRelationship: "户主",
+            memberConditions: ["高血脂"],
+            memberMedications: ["他汀类"],
+            memberPackageType: "标准套餐",
+            bloodPressure: "125/80",
+            bloodSugar: "6.1",
+            bowelMovement: "正常",
+            sleepQuality: "良好",
+            notes: "血脂控制良好，继续保持饮食和运动习惯"
+          }
+        ]
       }
-    }
+    ]
+    
+    setFamilyHealthRecords(sampleRecords)
+    localStorage.setItem("familyHealthRecords", JSON.stringify(sampleRecords))
+    console.log("[Records] 强制创建示例健康记录数据", sampleRecords)
   }, [])
 
   // Load local records from localStorage on mount
@@ -534,6 +619,8 @@ export default function RecordsPage() {
             time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
             familyMembers: currentFamilyHealth,
             isEditable: true,
+            familyId: selectedFamily?.id,
+            familyName: selectedFamily?.householdHead,
           }
 
           const updatedFamilyRecords = [newFamilyHealthRecord, ...familyHealthRecords]
@@ -720,9 +807,17 @@ export default function RecordsPage() {
   }
 
   const editFamilyHealthRecord = (recordId: string) => {
+    // 设置记录为可编辑状态
     setFamilyHealthRecords((prev) =>
       prev.map((record) => (record.recordId === recordId ? { ...record, isEditable: true } : record)),
     )
+    // 同时展开记录以显示编辑表单
+    setExpandedRecords(prev => {
+      const newSet = new Set(prev)
+      newSet.add(recordId)
+      console.log("[Records] 编辑时自动展开记录:", recordId)
+      return newSet
+    })
   }
 
   const saveFamilyHealthRecord = (recordId: string) => {
@@ -730,6 +825,32 @@ export default function RecordsPage() {
       const updated = prev.map((record) => (record.recordId === recordId ? { ...record, isEditable: false } : record))
       localStorage.setItem("familyHealthRecords", JSON.stringify(updated))
       return updated
+    })
+  }
+
+  const deleteFamilyHealthRecord = (recordId: string) => {
+    if (confirm("确定要删除这条健康记录吗？删除后无法恢复。")) {
+      setFamilyHealthRecords((prev) => {
+        const updated = prev.filter(record => record.recordId !== recordId)
+        localStorage.setItem("familyHealthRecords", JSON.stringify(updated))
+        return updated
+      })
+      console.log("[Records] 删除家庭健康记录:", recordId)
+    }
+  }
+
+  // 切换记录详情展开状态
+  const toggleRecordExpanded = (recordId: string) => {
+    setExpandedRecords(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(recordId)) {
+        newSet.delete(recordId)
+        console.log("[Records] 收起记录详情:", recordId)
+      } else {
+        newSet.add(recordId)
+        console.log("[Records] 展开记录详情:", recordId)
+      }
+      return newSet
     })
   }
 
@@ -751,6 +872,26 @@ export default function RecordsPage() {
           : record,
       ),
     )
+  }
+
+  // 处理历史记录家庭选择
+  const handleHistoryFamilySelect = (familyId: string, family: Family | null) => {
+    setHistorySelectedFamilyId(familyId)
+    setHistorySelectedFamily(family)
+    console.log("[Records] 历史记录选择家庭:", family?.householdHead)
+  }
+
+  // 根据选择的家庭过滤历史记录
+  const getFilteredHistoryRecords = () => {
+    if (!historySelectedFamily) {
+      return familyHealthRecords
+    }
+    
+    // 根据选择的家庭ID或名称过滤记录
+    return familyHealthRecords.filter(record => {
+      return record.familyId === historySelectedFamily.id || 
+             record.familyName === historySelectedFamily.householdHead
+    })
   }
 
   const playAudio = (audioUrl: string) => {
@@ -880,43 +1021,6 @@ export default function RecordsPage() {
     }
   }
 
-  // Combine local records with mock historical records
-  const allRecords = [...localRecords, ...mockHistoricalRecords]
-
-  // Filter records based on current tab and selected family
-  const getFilteredRecords = () => {
-    let records = allRecords
-    
-    // 如果选择了家庭，只显示该家庭的记录
-    if (selectedFamily) {
-      records = allRecords.filter(r => r.patientName === selectedFamily.householdHead)
-    }
-    
-    switch (currentTab) {
-      case "pending":
-        return records.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed")
-      case "uploaded":
-        return records.filter(r => r.uploadStatus === "uploaded")
-      case "drafts":
-        return records.filter(r => r.status === "draft")
-      default:
-        return records
-    }
-  }
-
-  const filteredRecords = getFilteredRecords()
-
-  // Calculate stats for header based on currently visible records
-  const baseRecords = selectedFamily 
-    ? allRecords.filter(r => r.patientName === selectedFamily.householdHead)
-    : allRecords
-    
-  const recordStats = {
-    total: baseRecords.length,
-    pending: baseRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed").length,
-    uploaded: baseRecords.filter(r => r.uploadStatus === "uploaded").length,
-    drafts: baseRecords.filter(r => r.status === "draft").length,
-  }
 
   return (
     <ProtectedRoute>
@@ -940,6 +1044,73 @@ export default function RecordsPage() {
           console.log("Filter records")
         }}
       />
+
+      {/* 大圆形开始记录按钮 - 页面顶部 */}
+      <div className={`flex justify-center ${deviceType === "mobile" ? "py-4 px-4" : deviceType === "tablet" ? "py-5 px-5" : "py-6 px-6"}`}>
+        <Button
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={audioPermission === "denied"}
+          className={`
+            relative overflow-hidden transition-all duration-500 transform hover:scale-105 active:scale-95
+            ${deviceType === "mobile" ? "w-20 h-20" : deviceType === "tablet" ? "w-24 h-24" : "w-28 h-28"}
+            rounded-full shadow-2xl border-4 border-white/30 backdrop-blur-sm
+            ${isRecording 
+              ? "bg-gradient-to-br from-red-400 via-red-500 to-red-600 hover:from-red-500 hover:via-red-600 hover:to-red-700 shadow-red-500/50 animate-pulse" 
+              : "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 shadow-blue-500/50"
+            }
+            ${audioPermission === "denied" ? "opacity-50 cursor-not-allowed" : "hover:shadow-3xl"}
+          `}
+        >
+          <div className="flex flex-col items-center justify-center text-white relative z-10">
+            {isRecording ? (
+              <>
+                <Square className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
+                <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>停止</span>
+              </>
+            ) : (
+              <>
+                <Mic className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
+                <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>记录</span>
+              </>
+            )}
+          </div>
+          
+          {/* 动画波纹效果 */}
+          {isRecording && (
+            <div className="absolute inset-0 rounded-full">
+              <div className="absolute inset-0 rounded-full bg-red-400/20 animate-ping"></div>
+              <div className="absolute inset-2 rounded-full bg-red-300/30 animate-ping animation-delay-75"></div>
+              <div className="absolute inset-4 rounded-full bg-red-200/40 animate-ping animation-delay-150"></div>
+            </div>
+          )}
+        </Button>
+      </div>
+
+      {/* 录音状态显示和错误提示 */}
+      {(isRecording || recordingError) && (
+        <div className={`flex justify-center ${deviceType === "mobile" ? "px-4 pb-2" : deviceType === "tablet" ? "px-5 pb-3" : "px-6 pb-4"}`}>
+          {isRecording && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-full px-6 py-3 shadow-lg">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-red-700 font-medium">正在录音...</span>
+                <div className="text-xl font-mono text-red-600 bg-white/70 px-3 py-1 rounded-full">
+                  {formatTime(recordingTime)}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {recordingError && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-full px-6 py-3 shadow-lg">
+              <div className="flex items-center gap-2 text-red-700">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">{recordingError}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={`space-y-3 ${deviceType === "mobile" ? "px-3 py-3" : deviceType === "tablet" ? "px-4 py-4" : "px-6 py-6 max-w-5xl mx-auto"}`}>
 
@@ -1013,66 +1184,6 @@ export default function RecordsPage() {
           </CardContent>
         </Card>
 
-        {/* Recording Section - 微信小程序风格 */}
-        <Card className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <CardContent className={`${deviceType === "mobile" ? "p-4" : "p-6"}`}>
-            <div className="text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Mic className="h-4 w-4 text-green-600" />
-                </div>
-                <h3 className={`font-semibold text-gray-800 ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
-                  健康信息记录
-                </h3>
-              </div>
-
-              {/* 录音状态显示 */}
-              {isRecording && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-red-700 font-medium">正在录音...</span>
-                  </div>
-                  <div className="text-2xl font-mono text-red-600">
-                    {formatTime(recordingTime)}
-                  </div>
-                </div>
-              )}
-
-              {/* 录音错误提示 */}
-              {recordingError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm">{recordingError}</span>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={audioPermission === "denied"}
-                className={`w-full transition-all duration-300 ${deviceType === "mobile" ? "py-4 text-base rounded-lg" : "py-5 text-lg rounded-xl"} font-medium ${
-                  isRecording 
-                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25" 
-                    : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/25"
-                } ${audioPermission === "denied" ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {isRecording ? (
-                  <>
-                    <Square className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} mr-2`} />
-                    结束记录
-                  </>
-                ) : (
-                  <>
-                    <Mic className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} mr-2`} />
-                    开始记录
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
           <CardHeader className={`bg-gradient-to-r from-green-500 to-green-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
@@ -1184,7 +1295,7 @@ export default function RecordsPage() {
         {familyHealthRecords.length > 0 && (
           <Card className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
             <CardHeader className={`bg-gradient-to-r from-purple-500 to-purple-600 text-white ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Users className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
                   <span className={`font-medium text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
@@ -1192,70 +1303,169 @@ export default function RecordsPage() {
                   </span>
                 </div>
                 <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-xs">
-                  {familyHealthRecords.length} 条记录
+                  {getFilteredHistoryRecords().length} 条记录
                 </Badge>
+              </div>
+              
+              {/* 历史记录家庭选择器 */}
+              <div className="w-full">
+                <FamilySelector
+                  selectedFamilyId={historySelectedFamilyId}
+                  onFamilySelect={handleHistoryFamilySelect}
+                  className="bg-white/10 backdrop-blur-sm border-white/20"
+                />
               </div>
             </CardHeader>
             <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-3" : "px-6 py-5 space-y-4"}`}>
-              {familyHealthRecords.map((record) => (
+              {getFilteredHistoryRecords().map((record) => (
                 <Card key={record.recordId} className="border border-gray-100">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">
-                          {record.date} {record.time}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {record.date} {record.time}
+                          </span>
+                          {record.familyName && (
+                            <span className="text-xs text-gray-500">
+                              家庭: {record.familyName}
+                            </span>
+                          )}
+                        </div>
                         {(record as any).uploadStatus === "uploaded" && (
                           <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
                             已上传
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {record.isEditable && !(record as any).uploadStatus ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => saveFamilyHealthRecord(record.recordId)}
-                              className="text-xs"
-                            >
-                              <Save className="h-3 w-3 mr-1" />
-                              保存
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => uploadRecord(record.recordId)}
-                              className="text-xs bg-green-600 hover:bg-green-700"
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              上传
-                            </Button>
-                          </>
-                        ) : (record as any).uploadStatus !== "uploaded" ? (
+                      <div className="flex flex-col gap-1">
+                        {record.isEditable ? (
+                          <Button
+                            size="sm"
+                            onClick={() => saveFamilyHealthRecord(record.recordId)}
+                            className="text-xs px-2 py-1 h-7 w-full justify-start"
+                          >
+                            <Save className="h-3 w-3 mr-1" />
+                            保存
+                          </Button>
+                        ) : (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => editFamilyHealthRecord(record.recordId)}
-                            className="text-xs"
+                            className="text-xs px-2 py-1 h-7 w-full justify-start border-blue-200 text-blue-600 hover:bg-blue-50"
                           >
                             <Edit3 className="h-3 w-3 mr-1" />
                             编辑
                           </Button>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-gray-500">
-                            已锁定
-                          </Badge>
                         )}
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleRecordExpanded(record.recordId)}
+                          className="text-xs px-2 py-1 h-7 w-full justify-start border-purple-200 text-purple-600 hover:bg-purple-50"
+                        >
+                          {expandedRecords.has(record.recordId) ? (
+                            <ChevronUp className="h-3 w-3 mr-1" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3 mr-1" />
+                          )}
+                          {expandedRecords.has(record.recordId) ? '收起' : '详细'}
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            console.log('上传语音:', record.recordId)
+                            // 暂时不加功能
+                          }}
+                          className="text-xs px-2 py-1 h-7 w-full justify-start border-orange-200 text-orange-600 hover:bg-orange-50"
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          上传语音
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteFamilyHealthRecord(record.recordId)}
+                          className="text-xs px-2 py-1 h-7 w-full justify-start border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          删除
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {record.familyMembers.map((member) => (
-                      <div key={member.memberId} className="border border-gray-100 rounded-lg p-3 bg-gray-50/50">
-                        <div className="flex items-center gap-2 mb-3">
-                          <User className="h-4 w-4 text-gray-600" />
-                          <span className="font-medium">{member.memberName}</span>
+                  {expandedRecords.has(record.recordId) && (
+                    <CardContent className="space-y-4">
+                      {record.familyMembers.map((member) => (
+                        <div key={member.memberId} className="border border-gray-100 rounded-lg p-3 bg-gray-50/50">
+                        <div className="space-y-2 mb-4">
+                          {/* 成员基本信息 */}
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-600" />
+                            <span className="font-medium text-lg">{member.memberName}</span>
+                          </div>
+                          
+                          {/* 成员详细信息 */}
+                          {(member.memberAge || member.memberGender || member.memberRelationship || member.memberPackageType || 
+                            (member.memberConditions && member.memberConditions.length > 0) || 
+                            (member.memberMedications && member.memberMedications.length > 0)) && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-blue-50/50 rounded-lg p-3">
+                              {member.memberAge && (
+                                <div>
+                                  <span className="text-gray-600">年龄:</span>
+                                  <span className="ml-1 font-medium">{member.memberAge}岁</span>
+                                </div>
+                              )}
+                              {member.memberGender && (
+                                <div>
+                                  <span className="text-gray-600">性别:</span>
+                                  <span className="ml-1 font-medium">{member.memberGender}</span>
+                                </div>
+                              )}
+                              {member.memberRelationship && (
+                                <div>
+                                  <span className="text-gray-600">关系:</span>
+                                  <span className="ml-1 font-medium">{member.memberRelationship}</span>
+                                </div>
+                              )}
+                              {member.memberPackageType && (
+                                <div>
+                                  <span className="text-gray-600">套餐:</span>
+                                  <span className="ml-1 font-medium">{member.memberPackageType}</span>
+                                </div>
+                              )}
+                              {member.memberConditions && member.memberConditions.length > 0 && (
+                                <div className="col-span-2 md:col-span-4">
+                                  <span className="text-gray-600">病症:</span>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {member.memberConditions.map((condition, index) => (
+                                      <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                                        {condition}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {member.memberMedications && member.memberMedications.length > 0 && (
+                                <div className="col-span-2 md:col-span-4">
+                                  <span className="text-gray-600">用药:</span>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {member.memberMedications.map((medication, index) => (
+                                      <span key={index} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                                        {medication}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {record.isEditable ? (
@@ -1338,311 +1548,64 @@ export default function RecordsPage() {
                           </div>
                         ) : (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                            {member.bloodPressure && (
-                              <div>
-                                <span className="text-gray-600">血压:</span>
-                                <span className="ml-1 font-medium">{member.bloodPressure}</span>
-                              </div>
-                            )}
-                            {member.bloodSugar && (
-                              <div>
-                                <span className="text-gray-600">血糖:</span>
-                                <span className="ml-1 font-medium">{member.bloodSugar}</span>
-                              </div>
-                            )}
-                            {member.bowelMovement && (
-                              <div>
-                                <span className="text-gray-600">排便:</span>
-                                <span className="ml-1 font-medium">{member.bowelMovement}</span>
-                              </div>
-                            )}
-                            {member.sleepQuality && (
-                              <div>
-                                <span className="text-gray-600">睡眠:</span>
-                                <span className="ml-1 font-medium">{member.sleepQuality}</span>
-                              </div>
-                            )}
-                            {member.notes && (
-                              <div className="col-span-2 md:col-span-4">
-                                <span className="text-gray-600">备注:</span>
-                                <span className="ml-1">{member.notes}</span>
-                              </div>
-                            )}
+                            <div>
+                              <span className="text-gray-600">血压:</span>
+                              <span className={cn(
+                                "ml-1",
+                                member.bloodPressure ? "font-medium text-gray-900" : "text-gray-400 italic"
+                              )}>
+                                {member.bloodPressure || "未填写"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">血糖:</span>
+                              <span className={cn(
+                                "ml-1",
+                                member.bloodSugar ? "font-medium text-gray-900" : "text-gray-400 italic"
+                              )}>
+                                {member.bloodSugar || "未填写"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">排便:</span>
+                              <span className={cn(
+                                "ml-1",
+                                member.bowelMovement ? "font-medium text-gray-900" : "text-gray-400 italic"
+                              )}>
+                                {member.bowelMovement || "未填写"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">睡眠:</span>
+                              <span className={cn(
+                                "ml-1",
+                                member.sleepQuality ? "font-medium text-gray-900" : "text-gray-400 italic"
+                              )}>
+                                {member.sleepQuality || "未填写"}
+                              </span>
+                            </div>
+                            <div className="col-span-2 md:col-span-4">
+                              <span className="text-gray-600">备注:</span>
+                              <span className={cn(
+                                "ml-1 block mt-1",
+                                member.notes ? "text-gray-900" : "text-gray-400 italic"
+                              )}>
+                                {member.notes || "未填写"}
+                              </span>
+                            </div>
                           </div>
                         )}
-                      </div>
-                    ))}
-                  </CardContent>
+                        </div>
+                      ))}
+                    </CardContent>
+                  )}
                 </Card>
               ))}
             </CardContent>
           </Card>
         )}
 
-        {/* Tab 切换 */}
-        <div className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <div className={`${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setCurrentTab("all")}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentTab === "all"
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                全部
-                <span className={`ml-1 text-xs ${currentTab === "all" ? "text-blue-500" : "text-gray-400"}`}>
-                  {allRecords.length}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setCurrentTab("pending")}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentTab === "pending"
-                    ? "bg-white text-orange-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                待上传
-                <span className={`ml-1 text-xs ${currentTab === "pending" ? "text-orange-500" : "text-gray-400"}`}>
-                  {recordStats.pending}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setCurrentTab("uploaded")}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentTab === "uploaded"
-                    ? "bg-white text-green-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                已上传
-                <span className={`ml-1 text-xs ${currentTab === "uploaded" ? "text-green-500" : "text-gray-400"}`}>
-                  {recordStats.uploaded}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setCurrentTab("drafts")}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentTab === "drafts"
-                    ? "bg-white text-purple-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                草稿
-                <span className={`ml-1 text-xs ${currentTab === "drafts" ? "text-purple-500" : "text-gray-400"}`}>
-                  {recordStats.drafts}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Historical Records - 微信小程序风格 */}
-        <Card className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <CardHeader className={`bg-gradient-to-r from-indigo-500 to-indigo-600 text-white ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-            <CardTitle className={`flex items-center justify-between ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
-              <div className="flex items-center gap-2">
-                <Activity className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
-                <span className="text-white font-medium">
-                  家庭记录列表
-                </span>
-              </div>
-              <Badge variant="outline" className="bg-white/20 text-white border-white/30 text-xs">
-                {filteredRecords.length} 条记录
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-3" : "px-6 py-5 space-y-4"}`}>
-            {filteredRecords.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 text-base mb-2">
-                  {currentTab === "all" ? "暂无记录" :
-                   currentTab === "pending" ? "暂无待上传记录" :
-                   currentTab === "uploaded" ? "暂无已上传记录" : "暂无草稿记录"}
-                </p>
-                <p className="text-gray-400 text-sm">点击上方按钮开始记录健康信息</p>
-              </div>
-            ) : (
-              filteredRecords.map((record) => (
-                <Card key={record.id} className={`border border-gray-100 bg-white hover:shadow-md transition-all duration-200 ${deviceType === "mobile" ? "rounded-lg" : "rounded-xl"}`}>
-                  <CardContent className={`${deviceType === "mobile" ? "p-4" : "p-5"}`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className={`font-semibold text-gray-900 ${deviceType === "mobile" ? "text-sm" : "text-base"} mb-1`}>
-                            {record.serviceType}
-                          </h4>
-                          <div className="flex items-center gap-2 text-gray-500">
-                            <Calendar className="h-3 w-3" />
-                            <span className={`${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>
-                              {record.date} {record.time}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className={`${getStatusColor(record.status)} text-xs px-2 py-1`}>
-                            {getStatusText(record.status)}
-                          </Badge>
-                          {localRecords.some((lr) => lr.id === record.id) && (
-                            <Badge variant="outline" className={`${getUploadStatusColor(record.uploadStatus)} text-xs px-2 py-1`}>
-                              <div className="flex items-center gap-1">
-                                {getUploadStatusIcon(record.uploadStatus)}
-                                <span className={`${deviceType === "mobile" ? "hidden" : ""}`}>
-                                  {getUploadStatusText(record.uploadStatus)}
-                                </span>
-                              </div>
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {localRecords.some((lr) => lr.id === record.id) && (
-                          <div className="flex gap-1">
-                            {(record.uploadStatus === "pending" || record.uploadStatus === "failed") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => uploadRecord(record.id)}
-                                disabled={uploadingRecords.has(record.id)}
-                                className={`${deviceType === "mobile" ? "w-8 h-8 p-0" : "text-xs px-2 py-1 h-7"} border-blue-200 text-blue-600 hover:bg-blue-50`}
-                              >
-                                {uploadingRecords.has(record.id) ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Upload className="h-3 w-3" />
-                                )}
-                                {deviceType !== "mobile" && <span className="ml-1">上传</span>}
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteRecord(record.id)}
-                              className={`${deviceType === "mobile" ? "w-8 h-8 p-0" : "text-xs px-2 py-1 h-7"} border-red-200 text-red-600 hover:bg-red-50`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                              {deviceType !== "mobile" && <span className="ml-1">删除</span>}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 地址信息 */}
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg mb-3">
-                      <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                      <span className={`text-gray-700 ${deviceType === "mobile" ? "text-xs" : "text-sm"} leading-relaxed`}>
-                        {record.location}
-                      </span>
-                    </div>
-
-                    {/* 生命体征 */}
-                    {Object.keys(record.vitals).length > 0 && (
-                      <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-3 mb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Activity className="h-4 w-4 text-blue-600" />
-                          <span className={`font-medium text-gray-900 ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>
-                            生命体征
-                          </span>
-                        </div>
-                        <div className={`grid gap-2 ${deviceType === "mobile" ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
-                          {record.vitals.bloodPressure && (
-                            <div className="bg-white rounded-md px-2 py-1 flex items-center gap-1">
-                              <Heart className="h-3 w-3 text-red-500" />
-                              <span className={`text-gray-900 ${deviceType === "mobile" ? "text-xs" : "text-sm"} font-medium`}>
-                                {record.vitals.bloodPressure}
-                              </span>
-                            </div>
-                          )}
-                          {record.vitals.heartRate && (
-                            <div className="bg-white rounded-md px-2 py-1 flex items-center gap-1">
-                              <Activity className="h-3 w-3 text-blue-500" />
-                              <span className={`text-gray-900 ${deviceType === "mobile" ? "text-xs" : "text-sm"} font-medium`}>
-                                {record.vitals.heartRate}bpm
-                              </span>
-                            </div>
-                          )}
-                          {record.vitals.temperature && (
-                            <div className="bg-white rounded-md px-2 py-1 flex items-center gap-1">
-                              <Thermometer className="h-3 w-3 text-orange-500" />
-                              <span className={`text-gray-900 ${deviceType === "mobile" ? "text-xs" : "text-sm"} font-medium`}>
-                                {record.vitals.temperature}°C
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 观察记录 */}
-                    <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                      <p className={`text-gray-700 ${deviceType === "mobile" ? "text-xs" : "text-sm"} leading-relaxed`}>
-                        {record.observations}
-                      </p>
-                    </div>
-
-                    {/* 媒体和操作 */}
-                    <div className={`flex items-center justify-between pt-3 border-t border-gray-100 ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>
-                      <div className="flex items-center gap-4 text-gray-500">
-                        {record.photos.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Camera className="h-3 w-3" />
-                            <span>{record.photos.length}张照片</span>
-                          </div>
-                        )}
-                        {record.audioNotes.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Mic className="h-3 w-3" />
-                            <span>{record.audioNotes.length}段录音</span>
-                          </div>
-                        )}
-                        {record.recordingDuration && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatTime(record.recordingDuration)}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {record.audioRecording && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => playAudio(record.audioRecording!)}
-                            className={`${deviceType === "mobile" ? "h-6 w-6 p-0" : "h-7 px-2"} text-blue-600 hover:bg-blue-50`}
-                          >
-                            <Play className="h-3 w-3" />
-                            {deviceType !== "mobile" && <span className="ml-1">播放</span>}
-                          </Button>
-                        )}
-                        {record.uploadedAt && (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="h-3 w-3" />
-                            {deviceType !== "mobile" && <span>已同步</span>}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       <BottomNavigation activeTab="records" />

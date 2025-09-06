@@ -123,3 +123,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .animation-delay-75 {
+    animation-delay: 75ms;
+  }
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+  .shadow-3xl {
+    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
+  }
+}
