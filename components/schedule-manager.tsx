@@ -499,7 +499,8 @@ export function ScheduleManager() {
         service: startAppointment.service_type?.name || '',
         time: startAppointment.start_time,
         address: startAppointment.patient?.family?.address || '',
-        appointmentId: startAppointment.id.toString()
+        appointmentId: startAppointment.id.toString(),
+        autoStart: 'true'  // 添加自动开始标志
       })
       
       console.log("🚀 准备跳转到记录页面，参数:", {

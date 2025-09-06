@@ -210,9 +210,13 @@ export default function RecordsPage() {
   const service = searchParams.get("service")
   const time = searchParams.get("time")
   const address = searchParams.get("address")
+  const autoStart = searchParams.get("autoStart") === "true"
+  const [shouldAutoStart, setShouldAutoStart] = useState(false)
+  const [autoStartCountdown, setAutoStartCountdown] = useState<number | null>(null)
+  const [countdownTimer, setCountdownTimer] = useState<NodeJS.Timeout | null>(null)
 
   console.log("[Records] URL参数:", {
-    patientId, familyId, familyName, patientName, service, time, address
+    patientId, familyId, familyName, patientName, service, time, address, autoStart
   })
   const appointmentId = searchParams.get("appointmentId")
   const taskType = searchParams.get("taskType")
@@ -557,10 +561,66 @@ export default function RecordsPage() {
     checkPermissions()
   }, [])
 
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (countdownTimer) {
+        clearTimeout(countdownTimer)
+      }
+    }
+  }, [countdownTimer])
+
+  // 处理从预约跳转过来时设置自动开始标志
+  useEffect(() => {
+    if (autoStart && familyName) {
+      console.log("[Records] 设置自动开始标志，familyName:", familyName)
+      setShouldAutoStart(true)
+    }
+  }, [autoStart, familyName])
+
+  // 倒计时效果
+  useEffect(() => {
+    if (autoStartCountdown !== null && autoStartCountdown > 0) {
+      const timer = setTimeout(() => {
+        setAutoStartCountdown(autoStartCountdown - 1)
+      }, 1000)
+      setCountdownTimer(timer)
+      return () => clearTimeout(timer)
+    } else if (autoStartCountdown === 0) {
+      // 倒计时结束，开始录音
+      console.log("[Records] 倒计时结束，开始录音")
+      setAutoStartCountdown(null)
+      startRecording()
+      setShouldAutoStart(false)
+    }
+  }, [autoStartCountdown])
+
+  // 检查家庭选择完成后启动5秒倒计时
+  useEffect(() => {
+    console.log("[Records] 检查自动开始条件:", {
+      shouldAutoStart,
+      selectedFamily: selectedFamily?.householdHead,
+      selectedFamilyId,
+      isRecording,
+      autoStartCountdown
+    })
+    
+    if (shouldAutoStart && selectedFamily && selectedFamilyId && selectedFamilyId !== "none" && !isRecording && autoStartCountdown === null) {
+      console.log("[Records] 满足条件，启动5秒倒计时")
+      setAutoStartCountdown(5) // 启动5秒倒计时
+    }
+  }, [shouldAutoStart, selectedFamily, selectedFamilyId, isRecording, autoStartCountdown])
+
   const startRecording = async () => {
     try {
-      console.log("[v0] Requesting microphone access")
+      console.log("[Records] 开始录音函数被调用")
       setRecordingError(null)
+      
+      // 清除自动开始标志
+      if (shouldAutoStart) {
+        setShouldAutoStart(false)
+        console.log("[Records] 清除自动开始标志")
+      }
 
       // 检查是否选择了家庭，如果没有则提醒用户
       if (!selectedFamily) {
@@ -583,6 +643,7 @@ export default function RecordsPage() {
       setIsEditingFamilyHealth(true)
 
       // Request microphone access
+      console.log("[Records] 请求麦克风权限")
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -595,6 +656,7 @@ export default function RecordsPage() {
       audioChunksRef.current = []
 
       // Create MediaRecorder
+      console.log("[Records] 创建MediaRecorder")
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
       })
@@ -682,6 +744,7 @@ export default function RecordsPage() {
       }
 
       // Start recording
+      console.log("[Records] 开始录音，设置状态")
       mediaRecorder.start(1000) // Collect data every second
       setIsRecording(true)
       setRecordingTime(0)
@@ -704,9 +767,9 @@ export default function RecordsPage() {
         status: "draft",
       })
 
-      console.log("[v0] Recording started successfully")
+      console.log("[Records] 录音启动成功，状态已更新")
     } catch (error) {
-      console.error("[v0] Error starting recording:", error)
+      console.error("[Records] 启动录音时发生错误:", error)
       setRecordingError(
         error instanceof Error
           ? error.name === "NotAllowedError"
@@ -720,6 +783,7 @@ export default function RecordsPage() {
   }
 
   const stopRecording = async () => {
+    console.log("[Records] 停止录音函数被调用")
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop()
       setIsRecording(false)
@@ -1197,23 +1261,46 @@ export default function RecordsPage() {
       {/* 大圆形开始记录按钮 - 页面顶部 */}
       <div className={`flex justify-center ${deviceType === "mobile" ? "py-4 px-4" : deviceType === "tablet" ? "py-5 px-5" : "py-6 px-6"}`}>
         <Button
-          onClick={isRecording ? stopRecording : startRecording}
+          onClick={
+            autoStartCountdown !== null 
+              ? () => {
+                  console.log("[Records] 用户取消自动开始倒计时")
+                  setAutoStartCountdown(null)
+                  setShouldAutoStart(false)
+                  if (countdownTimer) {
+                    clearTimeout(countdownTimer)
+                    setCountdownTimer(null)
+                  }
+                }
+              : isRecording ? stopRecording : startRecording
+          }
           disabled={audioPermission === "denied" || selectedFamilyId === "none"}
           className={`
             relative overflow-hidden transition-all duration-500 transform hover:scale-105 active:scale-95
             ${deviceType === "mobile" ? "w-20 h-20" : deviceType === "tablet" ? "w-24 h-24" : "w-28 h-28"}
             rounded-full shadow-2xl border-4 border-white/30 backdrop-blur-sm
-            ${isRecording 
-              ? "bg-gradient-to-br from-red-400 via-red-500 to-red-600 hover:from-red-500 hover:via-red-600 hover:to-red-700 shadow-red-500/50 animate-pulse" 
-              : selectedFamilyId === "none"
-                ? "bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 shadow-gray-400/30"
-                : "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 shadow-blue-500/50"
+            ${autoStartCountdown !== null
+              ? "bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 shadow-yellow-500/50 animate-pulse" 
+              : isRecording 
+                ? "bg-gradient-to-br from-red-400 via-red-500 to-red-600 hover:from-red-500 hover:via-red-600 hover:to-red-700 shadow-red-500/50 animate-pulse" 
+                : selectedFamilyId === "none"
+                  ? "bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 shadow-gray-400/30"
+                  : shouldAutoStart && selectedFamily
+                    ? "bg-gradient-to-br from-green-400 via-green-500 to-green-600 hover:from-green-500 hover:via-green-600 hover:to-green-700 shadow-green-500/50 animate-bounce"
+                    : "bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-600 hover:to-blue-700 shadow-blue-500/50"
             }
             ${(audioPermission === "denied" || selectedFamilyId === "none") ? "opacity-50 cursor-not-allowed" : "hover:shadow-3xl"}
           `}
         >
           <div className="flex flex-col items-center justify-center text-white relative z-10">
-            {isRecording ? (
+            {autoStartCountdown !== null ? (
+              <>
+                <div className={`${deviceType === "mobile" ? "text-xl" : deviceType === "tablet" ? "text-2xl" : "text-3xl"} font-bold mb-1`}>
+                  {autoStartCountdown}
+                </div>
+                <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>取消</span>
+              </>
+            ) : isRecording ? (
               <>
                 <Square className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
                 <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>停止</span>
@@ -1225,6 +1312,11 @@ export default function RecordsPage() {
                   {deviceType === "mobile" ? "选择家庭" : "请选择家庭"}
                 </span>
               </>
+            ) : shouldAutoStart && selectedFamily ? (
+              <>
+                <Mic className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
+                <span className={`font-bold ${deviceType === "mobile" ? "text-xs" : "text-sm"}`}>开始记录</span>
+              </>
             ) : (
               <>
                 <Mic className={`${deviceType === "mobile" ? "h-6 w-6" : deviceType === "tablet" ? "h-7 w-7" : "h-8 w-8"} mb-1`} />
@@ -1234,19 +1326,37 @@ export default function RecordsPage() {
           </div>
           
           {/* 动画波纹效果 */}
-          {isRecording && (
+          {(isRecording || autoStartCountdown !== null) && (
             <div className="absolute inset-0 rounded-full">
-              <div className="absolute inset-0 rounded-full bg-red-400/20 animate-ping"></div>
-              <div className="absolute inset-2 rounded-full bg-red-300/30 animate-ping animation-delay-75"></div>
-              <div className="absolute inset-4 rounded-full bg-red-200/40 animate-ping animation-delay-150"></div>
+              <div className={`absolute inset-0 rounded-full animate-ping ${
+                autoStartCountdown !== null ? "bg-yellow-400/20" : "bg-red-400/20"
+              }`}></div>
+              <div className={`absolute inset-2 rounded-full animate-ping animation-delay-75 ${
+                autoStartCountdown !== null ? "bg-yellow-300/30" : "bg-red-300/30"
+              }`}></div>
+              <div className={`absolute inset-4 rounded-full animate-ping animation-delay-150 ${
+                autoStartCountdown !== null ? "bg-yellow-200/40" : "bg-red-200/40"
+              }`}></div>
             </div>
           )}
         </Button>
       </div>
 
       {/* 录音状态显示和错误提示 */}
-      {(isRecording || recordingError) && (
+      {(isRecording || recordingError || autoStartCountdown !== null) && (
         <div className={`flex justify-center ${deviceType === "mobile" ? "px-4 pb-2" : deviceType === "tablet" ? "px-5 pb-3" : "px-6 pb-4"}`}>
+          {autoStartCountdown !== null && (
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-full px-6 py-3 shadow-lg">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                <span className="text-yellow-700 font-medium">准备开始录音...</span>
+                <div className="text-xl font-mono text-yellow-600 bg-white/70 px-3 py-1 rounded-full">
+                  {autoStartCountdown}秒
+                </div>
+              </div>
+            </div>
+          )}
+          
           {isRecording && (
             <div className="bg-red-50 border-2 border-red-200 rounded-full px-6 py-3 shadow-lg">
               <div className="flex items-center justify-center gap-3">

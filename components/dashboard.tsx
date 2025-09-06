@@ -140,7 +140,15 @@ export function Dashboard() {
 
   const handleStartService = (appointment: any) => {
     setShowAppointmentDetails(false)
-    router.push(`/patients?patient=${appointment.patientName}`)
+    // 跳转到记录页面并传递家庭信息和自动开始标志
+    const params = new URLSearchParams({
+      familyName: appointment.patientName || '',
+      service: appointment.service || '',
+      time: appointment.time || '',
+      address: appointment.address || '',
+      autoStart: 'true' // 标志自动开始录音
+    })
+    router.push(`/records?${params.toString()}`)
   }
 
   const handlePhoneCall = (phoneNumber: string) => {
