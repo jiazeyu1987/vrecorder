@@ -527,6 +527,38 @@ export const cancelAppointment = async (appointmentId: number): Promise<Appointm
   })
 }
 
+// ========== 测试函数：随机家庭选择 ==========
+
+export interface RandomFamilyResponse {
+  code: number
+  message: string
+  data: {
+    id: number
+    household_head: string
+    address: string
+    phone: string
+    members: Array<{
+      id: number
+      name: string
+      age: number
+      gender: string
+      relationship: string
+      phone: string
+      health_conditions: string[]
+      medications: string[]
+    }>
+  }
+}
+
+// 获取随机家庭数据
+export const getRandomFamily = async (): Promise<RandomFamilyResponse> => {
+  console.log('🎲 API: ====== 随机选择家庭被调用 ======')
+  console.log('🎲 调用堆栈:', new Error().stack)
+  return apiRequest('/families/random', {
+    method: 'GET',
+  })
+}
+
 // 获取服务类型列表
 export const getServiceTypes = async (): Promise<ServiceTypesResponse> => {
   return apiRequest('/service-types')

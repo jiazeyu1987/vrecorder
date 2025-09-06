@@ -13,6 +13,7 @@ import { WechatRecordHeader } from "@/components/wechat-record-header"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
+import { FamilySelector } from "@/components/family-selector"
 import {
   FileText,
   Calendar,
@@ -228,9 +229,20 @@ export default function RecordsPage() {
         { memberId: "1", memberName: "王秀英", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
         { memberId: "2", memberName: "王建华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
       ],
+      "王秀英": [
+        { memberId: "1", memberName: "王秀英", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "2", memberName: "王建华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "3", memberName: "王小丽", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+      ],
       陈爷爷: [
         { memberId: "1", memberName: "陈建国", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
         { memberId: "2", memberName: "陈美华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+      ],
+      "陈建国": [
+        { memberId: "1", memberName: "陈建国", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "2", memberName: "陈美华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "3", memberName: "陈小明", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
+        { memberId: "4", memberName: "陈小红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
       ],
     }
 
@@ -248,8 +260,27 @@ export default function RecordsPage() {
   const [currentFamilyHealth, setCurrentFamilyHealth] = useState<FamilyMemberHealth[]>(() =>
     getFamilyMembersForPatient(familyName || patientName),
   )
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>("")
+  const [selectedFamily, setSelectedFamily] = useState<any>(null)
+  const [refreshKey, setRefreshKey] = useState<number>(0)
+  const [isChangingFamily, setIsChangingFamily] = useState<boolean>(false)
 
   const getCurrentAppointmentData = (): CurrentAppointment => {
+    // 如果选择了家庭，优先使用选择的家庭信息
+    if (selectedFamily) {
+      return {
+        id: selectedFamily.id.toString(),
+        patientName: selectedFamily.householdHead,
+        patientAge: getPatientAge(selectedFamily.householdHead),
+        serviceType: getServiceTypeForFamily(selectedFamily.householdHead),
+        date: new Date().toISOString().split("T")[0],
+        time: getServiceTimeForFamily(selectedFamily.householdHead),
+        location: selectedFamily.address,
+        packageType: getPackageType(selectedFamily.householdHead),
+        paymentStatus: "paid" as const,
+      }
+    }
+    
     // 优先使用从日程页面传来的家庭信息
     if (familyId && familyName && service && time && address) {
       return {
@@ -298,9 +329,34 @@ export default function RecordsPage() {
       张明: 65,
       李华: 62,
       王奶奶: 71,
+      "王秀英": 71,
       陈爷爷: 78,
+      "陈建国": 78,
+      李老太: 79,
     }
     return ageData[patientName || ""] || 79
+  }
+
+  const getServiceTypeForFamily = (patientName: string): string => {
+    const serviceData: { [key: string]: string } = {
+      张明: "基础健康监测",
+      李华: "综合健康评估", 
+      "王秀英": "血压测量",
+      "陈建国": "康复训练",
+      李老太: "基础健康监测",
+    }
+    return serviceData[patientName] || "基础健康监测"
+  }
+
+  const getServiceTimeForFamily = (patientName: string): string => {
+    const timeData: { [key: string]: string } = {
+      张明: "09:00-10:00",
+      李华: "14:00-15:30",
+      "王秀英": "16:00-17:00",
+      "陈建国": "08:00-09:00", 
+      李老太: "09:30-10:30",
+    }
+    return timeData[patientName] || "09:30-10:30"
   }
 
   const getPackageType = (patientName: string | null): string => {
@@ -308,7 +364,10 @@ export default function RecordsPage() {
       张明: "基础护理套餐",
       李华: "综合护理套餐",
       王奶奶: "高级护理套餐",
+      "王秀英": "高级护理套餐",
       陈爷爷: "康复护理套餐",
+      "陈建国": "康复护理套餐",
+      李老太: "高级护理套餐",
     }
     return packageData[patientName || ""] || "高级护理套餐"
   }
@@ -795,6 +854,25 @@ export default function RecordsPage() {
     }
   }
 
+  const handleFamilySelect = (familyId: string, family: any) => {
+    // 显示变化中的视觉反馈
+    setIsChangingFamily(true)
+    
+    setSelectedFamilyId(familyId)
+    setSelectedFamily(family)
+    setRefreshKey(prev => prev + 1) // 触发重新渲染
+    
+    // 根据选择的家庭更新家庭成员健康记录
+    if (family) {
+      setCurrentFamilyHealth(getFamilyMembersForPatient(family.householdHead))
+    }
+    
+    // 1秒后隐藏变化反馈
+    setTimeout(() => {
+      setIsChangingFamily(false)
+    }, 1000)
+  }
+
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case "paid":
@@ -824,28 +902,39 @@ export default function RecordsPage() {
   // Combine local records with mock historical records
   const allRecords = [...localRecords, ...mockHistoricalRecords]
 
-  // Filter records based on current tab
+  // Filter records based on current tab and selected family
   const getFilteredRecords = () => {
+    let records = allRecords
+    
+    // 如果选择了家庭，只显示该家庭的记录
+    if (selectedFamily) {
+      records = allRecords.filter(r => r.patientName === selectedFamily.householdHead)
+    }
+    
     switch (currentTab) {
       case "pending":
-        return allRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed")
+        return records.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed")
       case "uploaded":
-        return allRecords.filter(r => r.uploadStatus === "uploaded")
+        return records.filter(r => r.uploadStatus === "uploaded")
       case "drafts":
-        return allRecords.filter(r => r.status === "draft")
+        return records.filter(r => r.status === "draft")
       default:
-        return allRecords
+        return records
     }
   }
 
   const filteredRecords = getFilteredRecords()
 
-  // Calculate stats for header
+  // Calculate stats for header based on currently visible records
+  const baseRecords = selectedFamily 
+    ? allRecords.filter(r => r.patientName === selectedFamily.householdHead)
+    : allRecords
+    
   const recordStats = {
-    total: allRecords.length,
-    pending: allRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed").length,
-    uploaded: allRecords.filter(r => r.uploadStatus === "uploaded").length,
-    drafts: allRecords.filter(r => r.status === "draft").length,
+    total: baseRecords.length,
+    pending: baseRecords.filter(r => r.uploadStatus === "pending" || r.uploadStatus === "failed").length,
+    uploaded: baseRecords.filter(r => r.uploadStatus === "uploaded").length,
+    drafts: baseRecords.filter(r => r.status === "draft").length,
   }
 
   return (
@@ -873,13 +962,27 @@ export default function RecordsPage() {
 
       <div className={`space-y-3 ${deviceType === "mobile" ? "px-3 py-3" : deviceType === "tablet" ? "px-4 py-4" : "px-6 py-6 max-w-5xl mx-auto"}`}>
 
+        {/* 家庭选择器 */}
+        <FamilySelector
+          selectedFamilyId={selectedFamilyId}
+          onFamilySelect={handleFamilySelect}
+          className="mb-4"
+        />
+
         {/* Current Appointment Info - 微信小程序风格 */}
-        <Card className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
-          <CardHeader className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
-            <CardTitle className={`flex items-center gap-2 ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
+        <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
+          <CardHeader className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
+            <div className="flex items-center gap-2">
               <Calendar className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
-              当前服务信息
-            </CardTitle>
+              <span className={`font-semibold text-white ${deviceType === "mobile" ? "text-base" : "text-lg"}`}>
+                当前服务信息
+              </span>
+            </div>
+            {isChangingFamily && (
+              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                已切换家庭
+              </div>
+            )}
           </CardHeader>
           <CardContent className={`${deviceType === "mobile" ? "px-4 py-4" : "px-6 py-5"}`}>
             {/* 家庭信息卡片 */}
@@ -988,7 +1091,7 @@ export default function RecordsPage() {
           </CardContent>
         </Card>
 
-        <Card className={`bg-white border-0 overflow-hidden ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
+        <Card className={`bg-white border-0 overflow-hidden transition-all duration-500 ${isChangingFamily ? 'ring-4 ring-green-300 shadow-2xl' : ''} ${deviceType === "mobile" ? "rounded-xl shadow-sm" : "rounded-2xl shadow-md"}`}>
           <CardHeader className={`bg-gradient-to-r from-green-500 to-green-600 text-white flex flex-row items-center justify-between space-y-0 ${deviceType === "mobile" ? "px-4 py-3" : "px-6 py-4"}`}>
             <div className="flex items-center gap-2">
               <Users className={`${deviceType === "mobile" ? "h-4 w-4" : "h-5 w-5"} text-white/90`} />
@@ -996,6 +1099,11 @@ export default function RecordsPage() {
                 家庭成员健康记录
               </CardTitle>
             </div>
+            {isChangingFamily && (
+              <div className="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                数据更新中...
+              </div>
+            )}
           </CardHeader>
           <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-4" : "px-6 py-5 space-y-5"}`}>
             {currentFamilyHealth.map((member) => (

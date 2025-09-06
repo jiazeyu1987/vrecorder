@@ -30,6 +30,7 @@ import {
   Upload,
   CheckCircle,
 } from "lucide-react"
+import { FamilySelector } from "./family-selector"
 
 interface Appointment {
   id: string
@@ -68,6 +69,17 @@ interface ServiceRecordManagerProps {
   appointmentId: string
 }
 
+interface Family {
+  id: number
+  householdHead: string
+  address: string
+  phone: string
+  emergency_contact?: string
+  emergency_phone?: string
+  patient_count?: number
+  created_at: string
+}
+
 export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProps) {
   const router = useRouter()
   const deviceType = useDeviceType()
@@ -84,6 +96,8 @@ export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProp
   const [showNewRecordForm, setShowNewRecordForm] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([])
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>("")
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Mock appointment data - 确保与 dashboard.tsx 中的数据匹配
@@ -312,6 +326,11 @@ export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProp
     }
   }
 
+  const handleFamilySelect = (familyId: string, family: Family | null) => {
+    setSelectedFamilyId(familyId)
+    setSelectedFamily(family)
+  }
+
   if (!appointment) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -360,6 +379,13 @@ export function ServiceRecordManager({ appointmentId }: ServiceRecordManagerProp
           )}>{appointment.patientName}</p>
         </div>
       </div>
+
+      {/* 家庭选择器 */}
+      <FamilySelector
+        selectedFamilyId={selectedFamilyId}
+        onFamilySelect={handleFamilySelect}
+        className="mb-6"
+      />
 
       {/* 微信风格当前预约信息卡片 */}
       <Card className={cn(
