@@ -78,8 +78,8 @@ export function WechatRecordHeader({
           </div>
         </div>
 
-        {/* 操作按钮组 */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* 操作按钮组 - 隐藏 */}
+        <div className="flex items-center gap-2 shrink-0 hidden">
           {showSearch && (
             <Button
               variant="ghost"

@@ -118,11 +118,9 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
 
   return (
     <Card className={cn(
-      "border-4 border-red-500 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl",
-      "bg-gradient-to-br from-red-50/80 via-white to-red-50/50 backdrop-blur-sm",
-      "ring-4 ring-red-300/50",
-      "animate-pulse hover:animate-none",
-      deviceType === "mobile" ? "rounded-3xl" : "rounded-2xl",
+      "border border-green-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md",
+      "bg-green-800",
+      deviceType === "mobile" ? "rounded-2xl" : "rounded-xl",
       className
     )}>
       <CardContent className={cn(
@@ -133,22 +131,18 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={cn(
-              "rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg",
-              "flex items-center justify-center transition-transform duration-300 hover:scale-110",
-              "ring-2 ring-red-300/50 animate-bounce",
+              "rounded-full bg-green-600 text-white shadow-sm",
+              "flex items-center justify-center transition-transform duration-300 hover:scale-105",
               deviceType === "mobile" ? "w-10 h-10" : "w-8 h-8"
             )}>
               <Home className={deviceType === "mobile" ? "h-5 w-5" : "h-4 w-4"} />
             </div>
             <h3 className={cn(
-              "font-bold text-red-700",
-              deviceType === "mobile" ? "text-xl" : "text-lg"
+              "font-semibold text-white",
+              deviceType === "mobile" ? "text-lg" : "text-base"
             )}>
-              🏠 选择家庭
+              选择家庭
             </h3>
-          </div>
-          <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-            新功能
           </div>
         </div>
 
@@ -156,21 +150,21 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
         <div className="space-y-2">
           <Select value={selectedFamilyId || ""} onValueChange={handleFamilySelect} disabled={isLoading}>
             <SelectTrigger className={cn(
-              "w-full bg-white/90 border-2 border-red-400 hover:bg-white focus:ring-red-500/30 focus:border-red-500",
-              "transition-all duration-200 shadow-md",
+              "w-full bg-green-700 border border-green-600 hover:border-green-500 focus:ring-green-400/30 focus:border-green-400 text-white",
+              "transition-all duration-200 shadow-sm",
               deviceType === "mobile" ? "h-12 text-base" : "h-10 text-sm"
             )}>
               <SelectValue placeholder={isLoading ? "加载中..." : "请选择家庭"} />
             </SelectTrigger>
-            <SelectContent className="max-h-60">
+            <SelectContent className="max-h-60 bg-green-800 border-green-700">
               {/* 无选项 */}
               <SelectItem value="none">
                 <div className="flex items-center gap-3 w-full">
                   <div className="flex-1">
-                    <div className="font-medium text-gray-500">无</div>
-                    <div className="text-sm text-gray-400">不选择任何家庭，显示所有记录</div>
+                    <div className="font-medium text-white">无</div>
+                    <div className="text-sm text-green-100">不选择任何家庭，显示所有记录</div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">
+                  <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full border border-green-200">
                     <span>-</span>
                   </div>
                 </div>
@@ -180,13 +174,13 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
                 <SelectItem key={family.id} value={family.id}>
                   <div className="flex items-center gap-3 w-full">
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">{family.householdHead}</div>
-                      <div className="text-sm text-gray-600 flex items-center gap-1">
+                      <div className="font-medium text-white">{family.householdHead}</div>
+                      <div className="text-sm text-green-100 flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
                         {family.address}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-200">
+                    <div className="flex items-center gap-1 text-xs text-green-800 bg-green-100 px-2 py-1 rounded-full border border-green-300">
                       <Users className="h-3 w-3" />
                       {family.totalMembers || 0}人
                     </div>
@@ -197,8 +191,8 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
           </Select>
 
           {error && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <span className="text-red-500">⚠</span>
+            <p className="text-sm text-red-300 flex items-center gap-1">
+              <span className="text-red-400">⚠</span>
               {error}
             </p>
           )}
@@ -207,35 +201,35 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className, au
         {/* 选中家庭的详细信息 */}
         {selectedFamily && (
           <div className={cn(
-            "rounded-2xl bg-white/80 backdrop-blur-sm border-2 border-red-300 transition-all duration-300 hover:bg-white/90",
-            "shadow-md ring-2 ring-red-200/30",
+            "rounded-xl bg-green-700 border border-green-600 transition-all duration-300 hover:bg-green-600",
+            "shadow-sm",
             deviceType === "mobile" ? "p-4" : "p-3"
           )}>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-red-600" />
+                <Users className="h-4 w-4 text-white" />
                 <span className={cn(
-                  "font-medium text-red-800",
+                  "font-medium text-white",
                   deviceType === "mobile" ? "text-base" : "text-sm"
                 )}>
                   户主: {selectedFamily.householdHead}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-red-600" />
+                <MapPin className="h-4 w-4 text-white" />
                 <span className={cn(
-                  "text-red-700 flex-1",
+                  "text-green-100 flex-1",
                   deviceType === "mobile" ? "text-sm" : "text-xs"
                 )}>
                   {selectedFamily.address}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-600 text-xs font-bold">电</span>
+                <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">电</span>
                 </div>
                 <span className={cn(
-                  "text-red-700",
+                  "text-green-100",
                   deviceType === "mobile" ? "text-sm" : "text-xs"
                 )}>
                   联系电话: {selectedFamily.phone}
