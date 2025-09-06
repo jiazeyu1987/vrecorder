@@ -6,17 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Home, Users, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
-
-interface Family {
-  id: number
-  householdHead: string
-  address: string
-  phone: string
-  emergency_contact?: string
-  emergency_phone?: string
-  patient_count?: number
-  created_at: string
-}
+import { getFamilies, withErrorHandling, type Family } from "@/lib/api"
 
 interface FamilySelectorProps {
   selectedFamilyId?: string
@@ -34,77 +24,20 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
   const fetchFamilies = async () => {
     try {
       setIsLoading(true)
-      const token = localStorage.getItem('access_token')
+      setError(null)
       
-      if (!token) {
-        throw new Error('未找到访问令牌')
-      }
-
-      const response = await fetch('/api/v1/families', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || '获取家庭列表失败')
-      }
-
-      const data = await response.json()
-      if (data.code === 200) {
-        setFamilies(data.data || [])
+      const response = await withErrorHandling(() => getFamilies(1, 100, ''))
+      
+      if (response.code === 200) {
+        setFamilies(response.data.families)
       } else {
-        throw new Error(data.message || '获取家庭列表失败')
+        throw new Error(response.message || '获取家庭列表失败')
       }
     } catch (err) {
       console.error('获取家庭列表失败:', err)
       setError(err instanceof Error ? err.message : '获取家庭列表失败')
-      // 如果API失败，使用模拟数据
-      setFamilies([
-        {
-          id: 1,
-          householdHead: "陈建国",
-          address: "海淀区AA路AA号",
-          phone: "13800138001",
-          emergency_contact: "陈明",
-          emergency_phone: "13800138002",
-          patient_count: 2,
-          created_at: "2024-01-15"
-        },
-        {
-          id: 2,
-          householdHead: "张明",
-          address: "朝阳区XX路XX号", 
-          phone: "13800138003",
-          emergency_contact: "张华",
-          emergency_phone: "13800138004",
-          patient_count: 1,
-          created_at: "2024-01-20"
-        },
-        {
-          id: 3,
-          householdHead: "李华",
-          address: "朝阳区YY路YY号",
-          phone: "13800138005",
-          emergency_contact: "李明",
-          emergency_phone: "13800138006", 
-          patient_count: 1,
-          created_at: "2024-01-25"
-        },
-        {
-          id: 4,
-          householdHead: "王秀英",
-          address: "西城区BB路BB号",
-          phone: "13800138007",
-          emergency_contact: "王强",
-          emergency_phone: "13800138008",
-          patient_count: 1,
-          created_at: "2024-01-30"
-        }
-      ])
+      // 保留空数组，不再使用模拟数据
+      setFamilies([])
     } finally {
       setIsLoading(false)
     }
@@ -115,13 +48,13 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
   }, [])
 
   const handleFamilySelect = (familyId: string) => {
-    const selectedFamily = families.find(f => f.id.toString() === familyId) || null
+    const selectedFamily = families.find(f => f.id === familyId) || null
     onFamilySelect(familyId, selectedFamily)
   }
 
   const getSelectedFamilyInfo = () => {
     if (!selectedFamilyId) return null
-    return families.find(f => f.id.toString() === selectedFamilyId) || null
+    return families.find(f => f.id === selectedFamilyId) || null
   }
 
   const selectedFamily = getSelectedFamilyInfo()
@@ -174,7 +107,7 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {families.map((family) => (
-                <SelectItem key={family.id} value={family.id.toString()}>
+                <SelectItem key={family.id} value={family.id}>
                   <div className="flex items-center gap-3 w-full">
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{family.householdHead}</div>
@@ -185,7 +118,7 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
                     </div>
                     <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full border border-red-200">
                       <Users className="h-3 w-3" />
-                      {family.patient_count || 0}人
+                      {family.totalMembers || 0}人
                     </div>
                   </div>
                 </SelectItem>
@@ -196,7 +129,7 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
           {error && (
             <p className="text-sm text-red-600 flex items-center gap-1">
               <span className="text-red-500">⚠</span>
-              {error}（已切换到模拟数据）
+              {error}
             </p>
           )}
         </div>
@@ -227,19 +160,17 @@ export function FamilySelector({ selectedFamilyId, onFamilySelect, className }: 
                   {selectedFamily.address}
                 </span>
               </div>
-              {selectedFamily.emergency_contact && (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-red-100 flex items-center justify-center">
-                    <span className="text-red-600 text-xs font-bold">紧</span>
-                  </div>
-                  <span className={cn(
-                    "text-red-700",
-                    deviceType === "mobile" ? "text-sm" : "text-xs"
-                  )}>
-                    紧急联系人: {selectedFamily.emergency_contact}
-                  </span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center">
+                  <span className="text-blue-600 text-xs font-bold">电</span>
                 </div>
-              )}
+                <span className={cn(
+                  "text-red-700",
+                  deviceType === "mobile" ? "text-sm" : "text-xs"
+                )}>
+                  联系电话: {selectedFamily.phone}
+                </span>
+              </div>
             </div>
           </div>
         )}

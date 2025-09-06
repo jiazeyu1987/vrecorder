@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useDeviceType } from "@/hooks/use-wechat-responsive"
 import { FamilySelector } from "@/components/family-selector"
+import type { Family } from "@/lib/api"
 import {
   FileText,
   Calendar,
@@ -208,60 +209,34 @@ export default function RecordsPage() {
   const [familyHealthRecords, setFamilyHealthRecords] = useState<FamilyHealthRecord[]>([])
   const audioUrlRef = useRef<string | null>(null)
 
-  const getFamilyMembersForPatient = (patientName: string | null) => {
-    const familyData: { [key: string]: FamilyMemberHealth[] } = {
-      张明: [
-        { memberId: "1", memberName: "张明", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "张丽", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "张小宝", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      李华: [
-        { memberId: "1", memberName: "李华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "李红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "李刚", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      李强: [
-        { memberId: "1", memberName: "李强", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "张丽华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "李小明", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      王奶奶: [
-        { memberId: "1", memberName: "王秀英", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "王建华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      "王秀英": [
-        { memberId: "1", memberName: "王秀英", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "王建华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "王小丽", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      陈爷爷: [
-        { memberId: "1", memberName: "陈建国", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "陈美华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
-      "陈建国": [
-        { memberId: "1", memberName: "陈建国", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "2", memberName: "陈美华", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "3", memberName: "陈小明", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-        { memberId: "4", memberName: "陈小红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      ],
+  // 基于选中的家庭生成家庭成员健康记录数据
+  const getFamilyMembersForPatient = (family: Family | null): FamilyMemberHealth[] => {
+    if (!family || !family.members) {
+      console.log("[Records] 没有选中家庭或家庭成员数据，返回空数组")
+      return []
     }
 
-    console.log("[Records] 查找家庭成员数据，传入名称:", patientName)
-    console.log("[Records] 可用的家庭数据键:", Object.keys(familyData))
-    const result = familyData[patientName || ""] || [
-      { memberId: "1", memberName: "李红", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      { memberId: "2", memberName: "李刚", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-      { memberId: "3", memberName: "李博", bloodPressure: "", bloodSugar: "", bowelMovement: "", sleepQuality: "" },
-    ]
-    console.log("[Records] 返回的家庭成员数据:", result)
+    console.log("[Records] 基于选中家庭生成成员健康记录:", family.householdHead, "成员数:", family.members.length)
+
+    // 将家庭成员转换为健康记录格式
+    const result = family.members.map((member) => ({
+      memberId: member.id,
+      memberName: member.name,
+      bloodPressure: "",
+      bloodSugar: "",
+      bowelMovement: "",
+      sleepQuality: ""
+    }))
+
+    console.log("[Records] 生成的家庭成员健康记录:", result)
     return result
   }
 
   const [currentFamilyHealth, setCurrentFamilyHealth] = useState<FamilyMemberHealth[]>(() =>
-    getFamilyMembersForPatient(familyName || patientName),
+    getFamilyMembersForPatient(null),
   )
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>("")
-  const [selectedFamily, setSelectedFamily] = useState<any>(null)
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null)
   const [refreshKey, setRefreshKey] = useState<number>(0)
   const [isChangingFamily, setIsChangingFamily] = useState<boolean>(false)
 
@@ -269,7 +244,7 @@ export default function RecordsPage() {
     // 如果选择了家庭，优先使用选择的家庭信息
     if (selectedFamily) {
       return {
-        id: selectedFamily.id.toString(),
+        id: selectedFamily.id,
         patientName: selectedFamily.householdHead,
         patientAge: getPatientAge(selectedFamily.householdHead),
         serviceType: getServiceTypeForFamily(selectedFamily.householdHead),
@@ -375,8 +350,8 @@ export default function RecordsPage() {
   const currentAppointment = getCurrentAppointmentData()
 
   useEffect(() => {
-    setCurrentFamilyHealth(getFamilyMembersForPatient(familyName || patientName))
-  }, [familyName, patientName])
+    setCurrentFamilyHealth(getFamilyMembersForPatient(selectedFamily))
+  }, [selectedFamily])
 
   const [isEditingFamilyHealth, setIsEditingFamilyHealth] = useState(true) // Default to true so it's always expanded
 
@@ -635,7 +610,7 @@ export default function RecordsPage() {
         console.log("[v0] 健康记录已保存，但预约状态需要用户手动更新")
 
         setCurrentRecord(null)
-        setCurrentFamilyHealth(getFamilyMembersForPatient(patientName))
+        setCurrentFamilyHealth(getFamilyMembersForPatient(selectedFamily))
         alert("记录已完成并保存到本地！")
       }
     }
@@ -854,7 +829,7 @@ export default function RecordsPage() {
     }
   }
 
-  const handleFamilySelect = (familyId: string, family: any) => {
+  const handleFamilySelect = (familyId: string, family: Family | null) => {
     // 显示变化中的视觉反馈
     setIsChangingFamily(true)
     
@@ -864,7 +839,7 @@ export default function RecordsPage() {
     
     // 根据选择的家庭更新家庭成员健康记录
     if (family) {
-      setCurrentFamilyHealth(getFamilyMembersForPatient(family.householdHead))
+      setCurrentFamilyHealth(getFamilyMembersForPatient(family))
     }
     
     // 1秒后隐藏变化反馈
