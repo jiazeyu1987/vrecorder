@@ -1490,8 +1490,8 @@ export default function RecordsPage() {
                 </Badge>
               </div>
               
-              {/* 历史记录家庭选择器 */}
-              <div className="w-full">
+              {/* 历史记录家庭选择器 - 隐藏但保持功能 */}
+              <div className="w-full hidden">
                 <FamilySelector
                   selectedFamilyId={historySelectedFamilyId}
                   onFamilySelect={handleHistoryFamilySelect}
