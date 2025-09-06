@@ -314,16 +314,17 @@ export default function RecordsPage() {
       }
     }
 
+    // 默认返回值 - 表示未选择家庭的状态
     return {
-      id: "1",
-      patientName: "李老太",
-      patientAge: 79,
-      serviceType: "基础健康监测",
-      date: "2024-03-15",
-      time: "09:30",
-      location: "朝阳区建国路88号",
-      packageType: "高级护理套餐",
-      paymentStatus: "paid",
+      id: "unspecified",
+      patientName: "未选择患者",
+      patientAge: 0,
+      serviceType: "待确定服务类型",
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+      location: "请选择家庭以获取地址信息",
+      packageType: "未指定套餐",
+      paymentStatus: "pending",
     }
   }
 
@@ -556,17 +557,24 @@ export default function RecordsPage() {
       console.log("[v0] Requesting microphone access")
       setRecordingError(null)
 
+      // 检查是否选择了家庭，如果没有则提醒用户
+      if (!selectedFamily) {
+        const shouldContinue = confirm(
+          "您还没有选择家庭，记录将创建为「未选择家庭」状态。\n\n" +
+          "建议先选择家庭以获得更完整的记录信息。\n\n" +
+          "是否继续录音？"
+        )
+        if (!shouldContinue) {
+          return // 用户选择不继续录音
+        }
+      }
+
       // Initialize family health tracking
-      const initialFamilyHealth = familyMembers.map((member) => ({
-        memberId: member.id,
-        memberName: member.name,
-        bloodPressure: "",
-        bloodSugar: "",
-        bowelMovement: "",
-        sleepQuality: "",
-        notes: "",
-      }))
+      const initialFamilyHealth = selectedFamily ? getFamilyMembersForPatient(selectedFamily) : []
       setCurrentFamilyHealth(initialFamilyHealth)
+      
+      console.log("[Records] 开始录音 - 已选择家庭:", selectedFamily?.householdHead || "未选择")
+      console.log("[Records] 家庭成员数:", initialFamilyHealth.length)
       setIsEditingFamilyHealth(true)
 
       // Request microphone access
@@ -624,24 +632,41 @@ export default function RecordsPage() {
           console.log("[v0] Record saved to local storage")
         }
 
-        // Save family health record
-        if (currentFamilyHealth.length > 0) {
-          const newFamilyHealthRecord: FamilyHealthRecord = {
-            recordId: Date.now().toString(),
-            date: currentAppointment.date,
-            time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
-            familyMembers: currentFamilyHealth,
-            isEditable: true,
-            familyId: selectedFamily?.id,
-            familyName: selectedFamily?.householdHead,
-          }
-
-          const updatedFamilyRecords = [newFamilyHealthRecord, ...familyHealthRecords]
-          setFamilyHealthRecords(updatedFamilyRecords)
-
-          // Save to localStorage
-          localStorage.setItem("familyHealthRecords", JSON.stringify(updatedFamilyRecords))
+        // Save family health record - 无论是否选择家庭都创建记录
+        const newFamilyHealthRecord: FamilyHealthRecord = {
+          recordId: Date.now().toString(),
+          date: currentAppointment.date,
+          time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
+          familyMembers: currentFamilyHealth.length > 0 ? currentFamilyHealth : [
+            // 如果没有选择家庭，创建一个默认的成员记录
+            {
+              memberId: "default-member-" + Date.now(),
+              memberName: "未指定患者",
+              memberAge: 0,
+              memberGender: "未知",
+              memberRelationship: "待确定",
+              memberConditions: [],
+              memberMedications: [],
+              memberPackageType: "未指定套餐",
+              bloodPressure: "",
+              bloodSugar: "",
+              bowelMovement: "",
+              sleepQuality: "",
+              notes: "本次录音未选择具体家庭，请后续编辑完善患者信息"
+            }
+          ],
+          isEditable: true,
+          familyId: selectedFamily?.id || "unspecified",
+          familyName: selectedFamily?.householdHead || "未选择家庭",
+          uploadStatus: "pending"
         }
+
+        const updatedFamilyRecords = [newFamilyHealthRecord, ...familyHealthRecords]
+        setFamilyHealthRecords(updatedFamilyRecords)
+
+        // Save to localStorage
+        localStorage.setItem("familyHealthRecords", JSON.stringify(updatedFamilyRecords))
+        console.log("[Records] 健康记录已保存:", newFamilyHealthRecord)
 
         // Cleanup
         if (streamRef.current) {
@@ -1460,11 +1485,16 @@ export default function RecordsPage() {
                               </Badge>
                             )}
                           </div>
-                          {record.familyName && (
+                          <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-500">
                               家庭: {record.familyName}
                             </span>
-                          )}
+                            {record.familyName === "未选择家庭" && (
+                              <Badge className="bg-orange-100 text-orange-700 text-xs px-1 py-0 h-4">
+                                ⚠ 待完善
+                              </Badge>
+                            )}
+                          </div>
                           {record.uploadedAt && (
                             <span className="text-xs text-green-600">
                               上传时间: {new Date(record.uploadedAt).toLocaleString('zh-CN')}
