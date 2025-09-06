@@ -1458,109 +1458,148 @@ export default function RecordsPage() {
             </CardHeader>
             <CardContent className={`${deviceType === "mobile" ? "px-4 py-4 space-y-3" : "px-6 py-5 space-y-4"}`}>
               {getFilteredHistoryRecords().map((record) => (
-                <Card key={record.recordId} className="border border-gray-100">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <div className="flex flex-col flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">
-                              {record.date} {record.time}
-                            </span>
-                            {/* 上传状态指示器 */}
-                            {record.uploadStatus === "uploaded" && (
-                              <Badge className="bg-green-100 text-green-700 text-xs px-2 py-0 h-5">
-                                ✓ 已上传
-                              </Badge>
-                            )}
-                            {record.uploadStatus === "failed" && (
-                              <Badge className="bg-red-100 text-red-700 text-xs px-2 py-0 h-5">
-                                ✗ 上传失败
-                              </Badge>
-                            )}
-                            {record.uploadStatus === "pending" && (
-                              <Badge className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0 h-5">
-                                ⏳ 待上传
-                              </Badge>
-                            )}
+                <Card key={record.recordId} className="border-0 shadow-sm rounded-xl bg-white overflow-hidden hover:shadow-md transition-shadow duration-200" style={{ backgroundColor: '#ffffff' }}>
+                  {/* 微信小程序风格的记录卡片头部 */}
+                  <div className="bg-gradient-to-r from-gray-50 to-white border-l-4 border-blue-400">
+                    <CardHeader className="pb-3 pt-4 px-4">
+                      <div className="flex items-start justify-between">
+                        {/* 左侧：家庭名称和日期信息 */}
+                        <div className="flex-1">
+                          {/* 家庭名称 - 突出显示 */}
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <Users className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-900 leading-tight">
+                                {record.familyName}
+                              </h3>
+                              <span className="text-xs text-gray-500 font-medium">
+                                {record.familyMembers?.length || 0}位成员
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
-                              家庭: {record.familyName}
+                          
+                          {/* 记录日期 - 突出显示 */}
+                          <div className="flex items-center gap-2 bg-white/80 rounded-full px-3 py-2 w-fit">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="font-semibold text-gray-800 text-sm">
+                              {record.date}
                             </span>
-                            {record.familyName === "未选择家庭" && (
-                              <Badge className="bg-orange-100 text-orange-700 text-xs px-1 py-0 h-4">
-                                ⚠ 待完善
-                              </Badge>
-                            )}
+                            <span className="text-gray-600 text-sm">
+                              {record.time}
+                            </span>
                           </div>
+                          
+                          {/* 上传时间显示（如果已上传） */}
                           {record.uploadedAt && (
-                            <span className="text-xs text-green-600">
-                              上传时间: {new Date(record.uploadedAt).toLocaleString('zh-CN')}
-                            </span>
+                            <div className="mt-2 text-xs text-green-600 font-medium">
+                              上传于: {new Date(record.uploadedAt).toLocaleString('zh-CN', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
                           )}
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {record.isEditable ? (
-                          <Button
-                            size="sm"
-                            onClick={() => saveFamilyHealthRecord(record.recordId)}
-                            className="text-xs px-2 py-1 h-7 w-full justify-start"
-                          >
-                            <Save className="h-3 w-3 mr-1" />
-                            保存
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => editFamilyHealthRecord(record.recordId)}
-                            className="text-xs px-2 py-1 h-7 w-full justify-start border-blue-200 text-blue-600 hover:bg-blue-50"
-                          >
-                            <Edit3 className="h-3 w-3 mr-1" />
-                            编辑
-                          </Button>
-                        )}
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleRecordExpanded(record.recordId)}
-                          className="text-xs px-2 py-1 h-7 w-full justify-start border-purple-200 text-purple-600 hover:bg-purple-50"
-                        >
-                          {expandedRecords.has(record.recordId) ? (
-                            <ChevronUp className="h-3 w-3 mr-1" />
+
+                        {/* 右侧：上传状态和操作按钮 */}
+                        <div className="flex flex-col items-end gap-2">
+                          {/* 上传状态指示器 - 微信风格 */}
+                          {record.uploadStatus === "uploaded" ? (
+                            <div className="bg-green-50 border border-green-200 rounded-full px-3 py-1 flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                              <span className="text-green-700 font-bold text-sm">已上传</span>
+                            </div>
+                          ) : record.uploadStatus === "failed" ? (
+                            <div className="bg-red-50 border border-red-200 rounded-full px-3 py-1 flex items-center gap-2">
+                              <AlertCircle className="h-3 w-3 text-red-600" />
+                              <span className="text-red-700 font-bold text-sm">未上传</span>
+                            </div>
+                          ) : record.uploadStatus === "uploading" ? (
+                            <div className="bg-blue-50 border border-blue-200 rounded-full px-3 py-1 flex items-center gap-2">
+                              <Loader2 className="h-3 w-3 text-blue-600 animate-spin" />
+                              <span className="text-blue-700 font-bold text-sm">上传中</span>
+                            </div>
                           ) : (
-                            <ChevronDown className="h-3 w-3 mr-1" />
+                            <div className="bg-red-50 border border-red-200 rounded-full px-3 py-1 flex items-center gap-2">
+                              <Clock className="h-3 w-3 text-red-600" />
+                              <span className="text-red-700 font-bold text-sm">未上传</span>
+                            </div>
                           )}
-                          {expandedRecords.has(record.recordId) ? '收起' : '详细'}
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => uploadHealthRecord(record.recordId)}
-                          disabled={uploadingRecords.has(record.recordId)}
-                          className="text-xs px-2 py-1 h-7 w-full justify-start border-orange-200 text-orange-600 hover:bg-orange-50 disabled:opacity-50"
-                        >
-                          <Upload className="h-3 w-3 mr-1" />
-                          {uploadingRecords.has(record.recordId) ? '上传中...' : '上传'}
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => deleteFamilyHealthRecord(record.recordId)}
-                          className="text-xs px-2 py-1 h-7 w-full justify-start border-red-200 text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          删除
-                        </Button>
+                          
+                          {record.familyName === "未选择家庭" && (
+                            <div className="bg-orange-50 border border-orange-200 rounded-full px-2 py-1">
+                              <span className="text-orange-700 font-bold text-xs">⚠ 待完善</span>
+                            </div>
+                          )}
+
+                          {/* 操作按钮组 */}
+                          <div className="flex items-center gap-1">
+                            {record.isEditable ? (
+                              <Button
+                                size="sm"
+                                onClick={() => saveFamilyHealthRecord(record.recordId)}
+                                className="text-xs px-3 py-1 h-7 bg-green-500 hover:bg-green-600 text-white rounded-full"
+                              >
+                                <Save className="h-3 w-3 mr-1" />
+                                保存
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => editFamilyHealthRecord(record.recordId)}
+                                className="text-xs px-3 py-1 h-7 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-full"
+                              >
+                                <Edit3 className="h-3 w-3 mr-1" />
+                                编辑
+                              </Button>
+                            )}
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => toggleRecordExpanded(record.recordId)}
+                              className="text-xs px-3 py-1 h-7 border-purple-200 text-purple-600 hover:bg-purple-50 rounded-full"
+                            >
+                              {expandedRecords.has(record.recordId) ? (
+                                <ChevronUp className="h-3 w-3 mr-1" />
+                              ) : (
+                                <ChevronDown className="h-3 w-3 mr-1" />
+                              )}
+                              {expandedRecords.has(record.recordId) ? '收起' : '详细'}
+                            </Button>
+                            
+                            {/* 上传按钮 - 仅对未上传的记录显示 */}
+                            {record.uploadStatus !== "uploaded" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => uploadHealthRecord(record.recordId)}
+                                disabled={uploadingRecords.has(record.recordId)}
+                                className="text-xs px-3 py-1 h-7 border-orange-200 text-orange-600 hover:bg-orange-50 disabled:opacity-50 rounded-full"
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                {uploadingRecords.has(record.recordId) ? '上传中' : '上传'}
+                              </Button>
+                            )}
+                            
+                            {/* 删除按钮 */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteFamilyHealthRecord(record.recordId)}
+                              className="text-xs px-2 py-1 h-7 border-red-200 text-red-600 hover:bg-red-50 rounded-full"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
+                  </div>
                   {expandedRecords.has(record.recordId) && (
                     <CardContent className="space-y-4">
                       {record.familyMembers.map((member) => (
