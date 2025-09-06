@@ -874,11 +874,21 @@ export default function RecordsPage() {
     )
   }
 
-  // 处理历史记录家庭选择
+  // 处理历史记录家庭选择 - 与主选择器保持同步
   const handleHistoryFamilySelect = (familyId: string, family: Family | null) => {
+    // 同步更新两个选择器的状态
     setHistorySelectedFamilyId(familyId)
     setHistorySelectedFamily(family)
-    console.log("[Records] 历史记录选择家庭:", family?.householdHead)
+    setSelectedFamilyId(familyId)
+    setSelectedFamily(family)
+    setRefreshKey(prev => prev + 1) // 触发重新渲染
+    
+    // 根据选择的家庭更新家庭成员健康记录
+    if (family) {
+      setCurrentFamilyHealth(getFamilyMembersForPatient(family))
+    }
+    
+    console.log("[Records] 历史记录选择家庭（同步到主选择器）:", family?.householdHead)
   }
 
   // 根据选择的家庭过滤历史记录
@@ -980,14 +990,19 @@ export default function RecordsPage() {
     // 显示变化中的视觉反馈
     setIsChangingFamily(true)
     
+    // 同步更新两个选择器的状态
     setSelectedFamilyId(familyId)
     setSelectedFamily(family)
+    setHistorySelectedFamilyId(familyId)
+    setHistorySelectedFamily(family)
     setRefreshKey(prev => prev + 1) // 触发重新渲染
     
     // 根据选择的家庭更新家庭成员健康记录
     if (family) {
       setCurrentFamilyHealth(getFamilyMembersForPatient(family))
     }
+    
+    console.log("[Records] 主选择器选择家庭（同步到历史选择器）:", family?.householdHead)
     
     // 1秒后隐藏变化反馈
     setTimeout(() => {
