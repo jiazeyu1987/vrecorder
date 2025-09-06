@@ -191,6 +191,8 @@ interface FamilyHealthRecord {
   isEditable: boolean
   familyId?: string
   familyName?: string
+  uploadStatus?: "pending" | "uploading" | "uploaded" | "failed"
+  uploadedAt?: string
 }
 
 const familyMembers = [
@@ -428,79 +430,90 @@ export default function RecordsPage() {
     return []
   }
 
-  useEffect(() => {
-    // 创建示例记录以便测试（强制覆盖现有数据）
-    const sampleRecords: FamilyHealthRecord[] = [
-      {
-        recordId: "sample-1",
-        date: new Date().toISOString().split('T')[0],
-        time: "09:30",
-        familyId: "family-1",
-        familyName: "张三家庭",
-        isEditable: false,
-        familyMembers: [
-          {
-            memberId: "member-1",
-            memberName: "张三",
-            memberAge: 45,
-            memberGender: "男",
-            memberRelationship: "户主",
-            memberConditions: ["高血压", "糖尿病"],
-            memberMedications: ["降压药", "二甲双胍"],
-            memberPackageType: "基础套餐",
-            bloodPressure: "135/90",
-            bloodSugar: "7.2",
-            bowelMovement: "正常",
-            sleepQuality: "一般",
-            notes: "血压略高，需要调整用药剂量"
-          },
-          {
-            memberId: "member-2", 
-            memberName: "李四",
-            memberAge: 42,
-            memberGender: "女",
-            memberRelationship: "配偶",
-            memberConditions: ["轻度贫血"],
-            memberMedications: ["铁剂"],
-            memberPackageType: "标准套餐",
-            bloodPressure: "120/75",
-            bloodSugar: "5.8",
-            bowelMovement: "偶尔便秘",
-            sleepQuality: "良好",
-            notes: "整体健康状况良好，继续补铁治疗"
-          }
-        ]
-      },
-      {
-        recordId: "sample-2",
-        date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // 昨天
-        time: "14:15",
-        familyId: "family-2",
-        familyName: "王五家庭",
-        isEditable: false,
-        familyMembers: [
-          {
-            memberId: "member-3",
-            memberName: "王五",
-            memberAge: 38,
-            memberGender: "男",
-            memberRelationship: "户主",
-            memberConditions: ["高血脂"],
-            memberMedications: ["他汀类"],
-            memberPackageType: "标准套餐",
-            bloodPressure: "125/80",
-            bloodSugar: "6.1",
-            bowelMovement: "正常",
-            sleepQuality: "良好",
-            notes: "血脂控制良好，继续保持饮食和运动习惯"
-          }
-        ]
+  // 从服务器获取健康记录数据
+  const fetchHealthRecords = async () => {
+    try {
+      console.log("[Records] 开始从服务器获取健康记录...")
+      
+      // 模拟API调用（这里应该调用实际的API）
+      // const response = await fetch('/api/health-records')
+      // const serverRecords = await response.json()
+      
+      // 暂时使用模拟数据，但优先使用localStorage中的数据
+      const savedRecords = localStorage.getItem("familyHealthRecords")
+      let records: FamilyHealthRecord[] = []
+      
+      if (savedRecords) {
+        try {
+          records = JSON.parse(savedRecords)
+          console.log("[Records] 从localStorage加载健康记录:", records.length + "条")
+        } catch (error) {
+          console.error("[Records] 解析localStorage数据失败:", error)
+        }
       }
-    ]
-    
-    setFamilyHealthRecords(sampleRecords)
-    localStorage.setItem("familyHealthRecords", JSON.stringify(sampleRecords))
-    console.log("[Records] 强制创建示例健康记录数据", sampleRecords)
+      
+      // 如果没有本地数据，创建示例数据
+      if (records.length === 0) {
+        records = [
+          {
+            recordId: "sample-1",
+            date: new Date().toISOString().split('T')[0],
+            time: "09:30",
+            familyId: "family-1",
+            familyName: "张三家庭",
+            isEditable: false,
+            familyMembers: [
+              {
+                memberId: "member-1",
+                memberName: "张三",
+                memberAge: 45,
+                memberGender: "男",
+                memberRelationship: "户主",
+                memberConditions: ["高血压", "糖尿病"],
+                memberMedications: ["降压药", "二甲双胍"],
+                memberPackageType: "基础套餐",
+                bloodPressure: "135/90",
+                bloodSugar: "7.2",
+                bowelMovement: "正常",
+                sleepQuality: "一般",
+                notes: "血压略高，需要调整用药剂量"
+              },
+              {
+                memberId: "member-2", 
+                memberName: "李四",
+                memberAge: 42,
+                memberGender: "女",
+                memberRelationship: "配偶",
+                memberConditions: ["轻度贫血"],
+                memberMedications: ["铁剂"],
+                memberPackageType: "标准套餐",
+                bloodPressure: "120/75",
+                bloodSugar: "5.8",
+                bowelMovement: "偶尔便秘",
+                sleepQuality: "良好",
+                notes: "整体健康状况良好，继续补铁治疗"
+              }
+            ]
+          }
+        ]
+        localStorage.setItem("familyHealthRecords", JSON.stringify(records))
+        console.log("[Records] 创建初始示例健康记录数据")
+      }
+      
+      setFamilyHealthRecords(records)
+      
+    } catch (error) {
+      console.error("[Records] 获取健康记录失败:", error)
+      // 获取失败时使用localStorage备份数据
+      const savedRecords = localStorage.getItem("familyHealthRecords")
+      if (savedRecords) {
+        setFamilyHealthRecords(JSON.parse(savedRecords))
+      }
+    }
+  }
+
+  useEffect(() => {
+    fetchHealthRecords()
   }, [])
 
   // Load local records from localStorage on mount
@@ -836,6 +849,93 @@ export default function RecordsPage() {
         return updated
       })
       console.log("[Records] 删除家庭健康记录:", recordId)
+    }
+  }
+
+  // 上传健康记录到服务器
+  const uploadHealthRecord = async (recordId: string) => {
+    try {
+      // 找到要上传的记录
+      const recordToUpload = familyHealthRecords.find(record => record.recordId === recordId)
+      if (!recordToUpload) {
+        alert("找不到要上传的记录")
+        return
+      }
+
+      // 设置上传状态
+      setUploadingRecords(prev => new Set(prev).add(recordId))
+      console.log("[Records] 开始上传健康记录:", recordId)
+
+      // 准备上传数据
+      const uploadData = {
+        recordId: recordToUpload.recordId,
+        date: recordToUpload.date,
+        time: recordToUpload.time,
+        familyId: recordToUpload.familyId,
+        familyName: recordToUpload.familyName,
+        familyMembers: recordToUpload.familyMembers.map(member => ({
+          memberId: member.memberId,
+          memberName: member.memberName,
+          memberAge: member.memberAge,
+          memberGender: member.memberGender,
+          memberRelationship: member.memberRelationship,
+          memberConditions: member.memberConditions,
+          memberMedications: member.memberMedications,
+          memberPackageType: member.memberPackageType,
+          healthData: {
+            bloodPressure: member.bloodPressure || '',
+            bloodSugar: member.bloodSugar || '',
+            bowelMovement: member.bowelMovement || '',
+            sleepQuality: member.sleepQuality || '',
+            notes: member.notes || ''
+          }
+        }))
+      }
+
+      // 模拟API调用（这里应该调用实际的API）
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      console.log("[Records] 健康记录上传成功:", uploadData)
+      
+      // 标记记录为已上传状态
+      setFamilyHealthRecords(prev => {
+        const updated = prev.map(record => 
+          record.recordId === recordId 
+            ? { 
+                ...record, 
+                uploadStatus: "uploaded" as const, 
+                uploadedAt: new Date().toISOString() 
+              }
+            : record
+        )
+        localStorage.setItem("familyHealthRecords", JSON.stringify(updated))
+        return updated
+      })
+      
+      alert(`健康记录已成功上传！\n记录ID: ${recordId}\n家庭: ${recordToUpload.familyName}\n包含 ${recordToUpload.familyMembers.length} 位成员的健康数据\n\n记录将保持在历史列表中，标记为已上传状态`)
+
+    } catch (error) {
+      console.error("[Records] 健康记录上传失败:", error)
+      
+      // 标记记录为上传失败状态
+      setFamilyHealthRecords(prev => {
+        const updated = prev.map(record => 
+          record.recordId === recordId 
+            ? { ...record, uploadStatus: "failed" as const }
+            : record
+        )
+        localStorage.setItem("familyHealthRecords", JSON.stringify(updated))
+        return updated
+      })
+      
+      alert("上传失败，请检查网络连接后重试")
+    } finally {
+      // 清除上传状态
+      setUploadingRecords(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(recordId)
+        return newSet
+      })
     }
   }
 
@@ -1338,21 +1438,39 @@ export default function RecordsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-500" />
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {record.date} {record.time}
-                          </span>
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">
+                              {record.date} {record.time}
+                            </span>
+                            {/* 上传状态指示器 */}
+                            {record.uploadStatus === "uploaded" && (
+                              <Badge className="bg-green-100 text-green-700 text-xs px-2 py-0 h-5">
+                                ✓ 已上传
+                              </Badge>
+                            )}
+                            {record.uploadStatus === "failed" && (
+                              <Badge className="bg-red-100 text-red-700 text-xs px-2 py-0 h-5">
+                                ✗ 上传失败
+                              </Badge>
+                            )}
+                            {record.uploadStatus === "pending" && (
+                              <Badge className="bg-yellow-100 text-yellow-700 text-xs px-2 py-0 h-5">
+                                ⏳ 待上传
+                              </Badge>
+                            )}
+                          </div>
                           {record.familyName && (
                             <span className="text-xs text-gray-500">
                               家庭: {record.familyName}
                             </span>
                           )}
+                          {record.uploadedAt && (
+                            <span className="text-xs text-green-600">
+                              上传时间: {new Date(record.uploadedAt).toLocaleString('zh-CN')}
+                            </span>
+                          )}
                         </div>
-                        {(record as any).uploadStatus === "uploaded" && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
-                            已上传
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex flex-col gap-1">
                         {record.isEditable ? (
@@ -1393,14 +1511,12 @@ export default function RecordsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            console.log('上传语音:', record.recordId)
-                            // 暂时不加功能
-                          }}
-                          className="text-xs px-2 py-1 h-7 w-full justify-start border-orange-200 text-orange-600 hover:bg-orange-50"
+                          onClick={() => uploadHealthRecord(record.recordId)}
+                          disabled={uploadingRecords.has(record.recordId)}
+                          className="text-xs px-2 py-1 h-7 w-full justify-start border-orange-200 text-orange-600 hover:bg-orange-50 disabled:opacity-50"
                         >
                           <Upload className="h-3 w-3 mr-1" />
-                          上传语音
+                          {uploadingRecords.has(record.recordId) ? '上传中...' : '上传'}
                         </Button>
                         
                         <Button
