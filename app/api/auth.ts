@@ -30,10 +30,25 @@ interface User {
   id: number;
   username: string;
   name: string;
+  phone?: string;
+  email?: string;
+  id_card?: string;
+  address?: string;
   role: string;
   avatar?: string;
   status: string;
   created_at: string;
+}
+
+interface RegisterData {
+  username: string;
+  password: string;
+  confirmPassword: string;
+  name: string;
+  email: string;
+  phone: string;
+  idCard: string;
+  address: string;
 }
 
 export class AuthService {
@@ -79,6 +94,50 @@ export class AuthService {
       }
     } catch (error) {
       console.error('Login API error:', error);
+      return {
+        success: false,
+        error: '网络错误，请检查网络连接',
+      };
+    }
+  }
+
+  /**
+   * Register a new user
+   */
+  static async register(registerData: RegisterData): Promise<{
+    success: boolean;
+    user?: User;
+    tokens?: AuthTokens;
+    error?: string;
+  }> {
+    try {
+      const response = await fetch(`${this.API_BASE_URL}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registerData),
+      });
+
+      const data: LoginResponse = await response.json();
+
+      if (data.code === 200 && data.data) {
+        return {
+          success: true,
+          user: data.data.user,
+          tokens: {
+            access_token: data.data.access_token,
+            refresh_token: data.data.refresh_token,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || '注册失败',
+        };
+      }
+    } catch (error) {
+      console.error('Register API error:', error);
       return {
         success: false,
         error: '网络错误，请检查网络连接',
